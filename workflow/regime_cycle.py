@@ -12,6 +12,7 @@ from core.regime_contracts import (
     RegimeSafetyState,
     build_unknown_regime_decision,
 )
+from core.snapshot_adapter import load_regime_input_from_snapshots
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_SNAPSHOT_PATH = PROJECT_ROOT / "data" / "system" / "result_snapshot.json"
@@ -51,12 +52,26 @@ def _build_decision_from_inputs(inputs: RegimeInput) -> RegimeDecision:
 def run_regime_cycle(
     write_snapshot: bool = True,
     inputs: RegimeInput | None = None,
+    use_snapshot_inputs: bool = True,
 ) -> dict[str, Any]:
     """Run one classification cycle.
 
-    Uses DRY_RUN_INPUTS (synthetic) when no inputs are provided.
+    Input priority:
+      1. Explicit ``inputs`` argument (tests / overrides).
+      2. Project snapshots via snapshot_adapter (if ``use_snapshot_inputs=True``).
+      3. DRY_RUN_INPUTS synthetic fallback.
+
+    Never writes to sibling projects.
     """
-    effective_inputs = inputs if inputs is not None else DRY_RUN_INPUTS
+    if inputs is not None:
+        effective_inputs = inputs
+        input_source = "explicit"
+    elif use_snapshot_inputs:
+        effective_inputs, input_source = load_regime_input_from_snapshots()
+    else:
+        effective_inputs = DRY_RUN_INPUTS
+        input_source = "synthetic_fallback"
+
     decision = _build_decision_from_inputs(effective_inputs)
     output_path = None
     if write_snapshot:
@@ -69,5 +84,6 @@ def run_regime_cycle(
         "risk_level": decision.risk_level,
         "reason": list(decision.reason),
         "result_snapshot_path": output_path,
+        "input_source": input_source,
         "decision": decision.to_dict(),
     }
