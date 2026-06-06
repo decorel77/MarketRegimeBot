@@ -15,8 +15,9 @@ class RegimeCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(payload["status"], "SAFE_DRY_RUN_REGIME")
         self.assertTrue(payload["dry_run"])
-        self.assertEqual(payload["regime"], "UNKNOWN")
-        self.assertEqual(payload["confidence"], 0)
+        # Phase 2: synthetic DRY_RUN_INPUTS (trend=0.8, vol=0.2) → BULL
+        self.assertEqual(payload["regime"], "BULL")
+        self.assertEqual(payload["confidence"], 80)
 
 
 if __name__ == "__main__":

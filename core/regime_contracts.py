@@ -16,7 +16,7 @@ VALID_REGIMES = {
     "RISK_OFF",
 }
 
-VALID_RISK_LEVELS = {"UNKNOWN", "LOW", "MEDIUM", "HIGH"}
+VALID_RISK_LEVELS = {"UNKNOWN", "LOW", "NORMAL", "MEDIUM", "HIGH"}
 
 
 class RegimeValidationError(ValueError):
@@ -59,6 +59,7 @@ class RegimeDecision:
     confidence: int
     risk_level: str
     safety: RegimeSafetyState
+    reason: tuple[str, ...] = ()
 
     def validate(self) -> None:
         self.safety.validate()
@@ -80,6 +81,7 @@ class RegimeDecision:
         payload = asdict(self)
         safety = payload.pop("safety")
         payload.update(safety)
+        payload["reason"] = list(payload.get("reason", []))
         return payload
 
 

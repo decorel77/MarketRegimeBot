@@ -6,7 +6,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from core.regime_contracts import RegimeDecision, build_unknown_regime_decision
+from core.regime_classifier import DRY_RUN_INPUTS, RegimeInput, classify_regime
+from core.regime_contracts import (
+    RegimeDecision,
+    RegimeSafetyState,
+    build_unknown_regime_decision,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_SNAPSHOT_PATH = PROJECT_ROOT / "data" / "system" / "result_snapshot.json"
@@ -28,8 +33,31 @@ def write_result_snapshot(
     return result_path
 
 
-def run_regime_cycle(write_snapshot: bool = True) -> dict[str, Any]:
-    decision = build_unknown_regime_decision()
+def _build_decision_from_inputs(inputs: RegimeInput) -> RegimeDecision:
+    result = classify_regime(inputs)
+    decision = RegimeDecision(
+        project="MarketRegimeBot",
+        status="SAFE_DRY_RUN_REGIME",
+        market_regime=result.market_regime,
+        confidence=result.confidence,
+        risk_level=result.risk_level,
+        safety=RegimeSafetyState(),
+        reason=result.reason,
+    )
+    decision.validate()
+    return decision
+
+
+def run_regime_cycle(
+    write_snapshot: bool = True,
+    inputs: RegimeInput | None = None,
+) -> dict[str, Any]:
+    """Run one classification cycle.
+
+    Uses DRY_RUN_INPUTS (synthetic) when no inputs are provided.
+    """
+    effective_inputs = inputs if inputs is not None else DRY_RUN_INPUTS
+    decision = _build_decision_from_inputs(effective_inputs)
     output_path = None
     if write_snapshot:
         output_path = str(write_result_snapshot(decision))
@@ -38,7 +66,8 @@ def run_regime_cycle(write_snapshot: bool = True) -> dict[str, Any]:
         "dry_run": decision.dry_run,
         "regime": decision.market_regime,
         "confidence": decision.confidence,
+        "risk_level": decision.risk_level,
+        "reason": list(decision.reason),
         "result_snapshot_path": output_path,
         "decision": decision.to_dict(),
     }
-
