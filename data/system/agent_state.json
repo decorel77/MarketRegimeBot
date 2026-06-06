@@ -1,0 +1,14 @@
+{
+  "project": "MarketRegimeBot",
+  "active_phase": "PHASE_1_SKELETON_CONTRACTS",
+  "autonomous_mode": false,
+  "dry_run_only": true,
+  "live_trading_enabled": false,
+  "broker_execution_enabled": false,
+  "order_placement_enabled": false,
+  "money_movement_enabled": false,
+  "writes_to_other_projects_enabled": false,
+  "allocation_export_enabled": false,
+  "status": "SKELETON_ONLY_SAFE_DRY_RUN"
+}
+

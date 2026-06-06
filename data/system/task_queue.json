@@ -1,0 +1,45 @@
+[
+  {
+    "id": "REGIME-PHASE-001",
+    "title": "Skeleton + contracts",
+    "phase": "PHASE_1",
+    "status": "TODO",
+    "risk": "LOW"
+  },
+  {
+    "id": "REGIME-PHASE-002",
+    "title": "Read market index data read-only",
+    "phase": "PHASE_2",
+    "status": "TODO",
+    "risk": "LOW"
+  },
+  {
+    "id": "REGIME-PHASE-003",
+    "title": "Volatility regime detection",
+    "phase": "PHASE_3",
+    "status": "TODO",
+    "risk": "MEDIUM"
+  },
+  {
+    "id": "REGIME-PHASE-004",
+    "title": "Risk-on/risk-off classifier",
+    "phase": "PHASE_4",
+    "status": "TODO",
+    "risk": "MEDIUM"
+  },
+  {
+    "id": "REGIME-PHASE-005",
+    "title": "AllocationBot snapshot integration",
+    "phase": "PHASE_5",
+    "status": "TODO",
+    "risk": "MEDIUM"
+  },
+  {
+    "id": "REGIME-PHASE-006",
+    "title": "Human approval / dashboard output",
+    "phase": "PHASE_6",
+    "status": "TODO",
+    "risk": "MEDIUM"
+  }
+]
+
