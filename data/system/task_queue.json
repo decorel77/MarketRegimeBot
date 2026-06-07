@@ -14,6 +14,21 @@
     ]
   },
   {
+    "id": "REGIME-AUTOCYCLE-ARCH-001",
+    "title": "Autocycle architecture preparation",
+    "phase": "PHASE_1",
+    "status": "DONE",
+    "risk": "LOW",
+    "completed": "2026-06-07",
+    "note": "Autocycle preparation completed. Autocycle execution not implemented. Human approval remains mandatory.",
+    "deliverables": [
+      "docs/architecture/autocycle_architecture.md",
+      "data/system/autocycle_policy.json",
+      "utils/autocycle_policy_validator.py",
+      "tests/test_autocycle_policy.py"
+    ]
+  },
+  {
     "id": "REGIME-PHASE-002",
     "title": "Read market index data read-only",
     "phase": "PHASE_2",

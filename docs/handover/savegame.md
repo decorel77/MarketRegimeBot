@@ -1,5 +1,52 @@
 # MarketRegimeBot Savegame
 
+## 2026-06-07 — Autocycle Architecture Prepared
+
+Autocycle preparation completed. Architecture documented, policy schema defined,
+validator created, tests written. Autocycle execution is NOT implemented.
+Human approval remains mandatory before any commit or push.
+
+### Created this session
+
+| File | Description |
+|---|---|
+| `docs/architecture/autocycle_architecture.md` | 8-phase autocycle architecture (planning only) |
+| `data/system/autocycle_policy.json` | Autocycle policy schema — execution disabled |
+| `utils/autocycle_policy_validator.py` | Offline policy validator — no connections |
+| `tests/test_autocycle_policy.py` | Unit tests for policy schema and validator |
+| `docs/handover/CURRENT_STATE.md` | Updated state document |
+| `docs/handover/savegame.md` | This file |
+| `data/system/task_queue.json` | REGIME-AUTOCYCLE-ARCH-001 marked DONE |
+
+### Autocycle policy key values
+
+| Field | Value |
+|---|---|
+| `enabled` | `false` |
+| `execution_allowed` | `false` |
+| `runtime_effect` | `false` |
+| `informational_only` | `true` |
+| `max_tasks_per_cycle` | `3` |
+| `allowed_risk_levels` | `["LOW"]` |
+| `commit_requires_human_approval` | `true` |
+| `push_requires_human_approval` | `true` |
+
+### Safety confirmation
+
+- No broker changes.
+- No trading logic changes.
+- No scheduler changes.
+- No execution changes.
+- No live trading enablement.
+- No Telegram execution changes.
+- No TWS/IBKR changes.
+- No credential changes.
+- No writes to other NOVA repositories.
+- Autocycle execution remains disabled.
+- Human approval remains mandatory.
+
+---
+
 ## 2026-06-07 — Foundation Created
 
 MarketRegimeBot Phase 1 foundation was completed. All work is documentation,

@@ -1,0 +1,30 @@
+{
+  "_schema_version": "1.0.0",
+  "_description": "Autocycle policy for MarketRegimeBot. Controls whether the future autocycle system may select and prepare tasks. All execution, commit, and push actions remain disabled and require human approval.",
+  "_safety": {
+    "execution_allowed": false,
+    "runtime_effect": false,
+    "informational_only": true,
+    "commit_requires_human_approval": true,
+    "push_requires_human_approval": true,
+    "broker_access_allowed": false,
+    "order_access_allowed": false,
+    "credential_access_allowed": false
+  },
+  "policy": {
+    "enabled": false,
+    "informational_only": true,
+    "runtime_effect": false,
+    "execution_allowed": false,
+    "max_tasks_per_cycle": 3,
+    "allowed_risk_levels": ["LOW"],
+    "allowed_task_types": ["DOCS", "SCHEMA", "TEST"],
+    "prohibited_task_types": ["BROKER", "EXECUTION", "CODE", "TRADING", "ORDER"],
+    "commit_requires_human_approval": true,
+    "push_requires_human_approval": true,
+    "prohibited_keywords": [
+      "broker", "order", "trade", "IBKR", "TWS",
+      "telegram", "credential", ".env", "execute", "allocat"
+    ]
+  }
+}
