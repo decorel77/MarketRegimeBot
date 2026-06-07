@@ -1,44 +1,55 @@
 # MarketRegimeBot Savegame
 
-## 2026-06-07 — Structure Readiness Check + Autocycle Prep Complete
+## 2026-06-07 — REGIME-PHASE-002A Complete (Autocycle Run 1)
 
-Structure readiness confirmed. Minor documentation and schema fixes applied.
-Autocycle dev prompt template created. Repository is ready for sequential
-2-task autocycle runs starting with REGIME-PHASE-002A.
+Autocycle Run 1. Task REGIME-PHASE-002A completed: regime definitions
+documentation and naming alignment. Registry expanded to v1.1.0.
+No code changes. 57 tests pass (27 new). Ready for human review and commit.
 
-### Issues found and fixed this session
+### Task completed
 
-| Issue | Fix applied |
-|---|---|
-| ROADMAP.md Phase 1 status was "In Progress" | Updated to "Complete (2026-06-07)" |
-| ROADMAP.md missing autocycle deliverables from Phase 1 | Added all autocycle files + naming issue note |
-| agent_state.json stale (PHASE_1_SKELETON_CONTRACTS) | Updated to PHASE_2_REGIME_DEFINITIONS / FOUNDATION_COMPLETE_AWAITING_PHASE_2 |
-| task_queue.json had no autocycle-eligible TODO tasks | Split REGIME-PHASE-002 → 002A (DOCS_SCHEMA, eligible) + 002B (CODE, not eligible) |
-| task_queue.json phases not cross-referenced to ROADMAP | Added `roadmap_phase_ref` field to all tasks |
-| No sequential autocycle prompt template existed | Created docs/architecture/sequential_autocycle_dev_prompt.md |
+**REGIME-PHASE-002A** — Regime definitions documentation and naming alignment
 
-### Issues found but NOT fixed (code changes required)
+Type: DOCS_SCHEMA | Risk: LOW | Autocycle eligible: YES
 
-| Issue | Why not fixed | Resolution path |
-|---|---|---|
-| Classifier/contracts use `BULL`/`BEAR`/`SIDEWAYS`; registry uses `BULL_MARKET`/`BEAR_MARKET`/`SIDEWAYS_MARKET` | Core code change — out of scope for doc/schema session | REGIME-PHASE-002A will document the alignment; code fix deferred to REGIME-PHASE-002B |
-
-### Files created or modified this session
+### Files created or modified
 
 | File | Change |
 |---|---|
-| `ROADMAP.md` | Phase 1 status fixed; autocycle deliverables added; naming issue noted |
-| `data/system/agent_state.json` | Phase and status updated to current state |
-| `data/system/task_queue.json` | Split 002 → 002A/002B; added roadmap_phase_ref; added autocycle_eligible flags |
-| `docs/architecture/sequential_autocycle_dev_prompt.md` | New — reusable autocycle dev prompt template |
-| `docs/handover/CURRENT_STATE.md` | Full update reflecting structure readiness |
+| `docs/regime_definitions.md` | New — full regime vocabulary, naming alignment plan, scoring thresholds |
+| `data/system/regime_registry.json` | Updated to v1.1.0 — added classifier_id, classifier_aligned, scoring_hints, signals, _naming_alignment block |
+| `utils/regime_registry_validator.py` | Updated — v1.1.0 field validation (classifier_id, scoring_hints, signals) |
+| `tests/test_regime_registry.py` | Updated — 57 tests (up from 30); 27 new tests for v1.1.0 fields and naming alignment |
+| `data/system/task_queue.json` | REGIME-PHASE-002A marked DONE; REGIME-PHASE-002B note updated |
+| `docs/handover/CURRENT_STATE.md` | Updated — naming alignment status table, v1.1.0 registry noted |
 | `docs/handover/savegame.md` | This file |
 
-### Next autocycle-eligible task
+### Registry v1.1.0 — new fields
 
-`REGIME-PHASE-002A` — Regime definitions documentation and naming alignment
+| Field | Type | Purpose |
+|---|---|---|
+| `classifier_id` | string or null | Short ID used in core/regime_classifier.py (documents mismatch) |
+| `classifier_aligned` | boolean or null | Whether registry ID == classifier ID |
+| `scoring_hints` | object | Classifier thresholds and priority for this regime |
+| `signals` | array of strings | Indicator signals that suggest this regime |
+| `_naming_alignment` | block | Top-level list of all misaligned pairs with resolution plan |
 
-Type: DOCS_SCHEMA | Risk: LOW | Autocycle eligible: YES
+### Naming alignment documented
+
+| Registry ID | Classifier ID | Status |
+|---|---|---|
+| BULL_MARKET | BULL | Misaligned — documented, fix in 002B |
+| BEAR_MARKET | BEAR | Misaligned — documented, fix in 002B |
+| SIDEWAYS_MARKET | SIDEWAYS | Misaligned — documented, fix in 002B |
+| HIGH_VOLATILITY | HIGH_VOLATILITY | Aligned |
+| LOW_VOLATILITY | null | Not yet implemented |
+| RISK_ON | null | Not yet implemented |
+| RISK_OFF | null | Not yet implemented |
+
+### Task 2 assessment
+
+Next task is REGIME-PHASE-002B (`autocycle_eligible: false`, task_type: CODE).
+Autocycle run stops here as required by policy. Human review required for 002B.
 
 ### Safety confirmation
 
@@ -51,61 +62,102 @@ Type: DOCS_SCHEMA | Risk: LOW | Autocycle eligible: YES
 - No TWS/IBKR changes.
 - No credential changes.
 - No writes to other NOVA repositories.
+- No classifier or contracts code modified.
 - Autocycle execution remains disabled.
 - Human approval remains mandatory.
+
+---
+
+## 2026-06-07 — Guardrails Authority Standard Applied
+
+Added central guardrails authority standard (adapted from NovaBotV2Options).
+All guardrail tests pass. Validator confirms all safety fields correct.
+
+### Files created
+
+| File | Description |
+|---|---|
+| `docs/architecture/guardrails.md` | Central guardrails authority document |
+| `data/system/guardrails.json` | Machine-readable policy — all safety fields locked |
+| `utils/guardrails_validator.py` | Offline reporting-only validator |
+| `tests/test_guardrails.py` | 9 guardrails tests (all pass) |
+
+### Safety confirmation
+
+- No broker/trading/scheduler/Telegram/TWS/IBKR changes.
+- No `.env` or credential changes.
+- No execution logic added.
+- `runtime_effect=false`, `execution_allowed=false` throughout.
+
+---
+
+## 2026-06-07 — Structure Readiness Check + Autocycle Prep Complete
+
+Structure readiness confirmed. Minor documentation and schema fixes applied.
+Autocycle dev prompt template created.
+
+### Files created or modified this session
+
+| File | Change |
+|---|---|
+| `ROADMAP.md` | Phase 1 status fixed; autocycle deliverables added |
+| `data/system/agent_state.json` | Phase and status updated |
+| `data/system/task_queue.json` | Split 002 → 002A/002B; roadmap_phase_ref added |
+| `docs/architecture/sequential_autocycle_dev_prompt.md` | New — reusable autocycle prompt template |
+| `docs/handover/CURRENT_STATE.md` | Full update |
+| `docs/handover/savegame.md` | This file |
 
 ---
 
 ## 2026-06-07 — Autocycle Architecture Prepared
 
 Autocycle preparation completed. Architecture documented, policy schema defined,
-validator created, tests written. Autocycle execution is NOT implemented.
-Human approval remains mandatory before any commit or push.
-
-### Created this session
-
-| File | Description |
-|---|---|
-| `docs/architecture/autocycle_architecture.md` | 8-phase autocycle architecture (planning only) |
-| `data/system/autocycle_policy.json` | Autocycle policy schema — execution disabled |
-| `utils/autocycle_policy_validator.py` | Offline policy validator — no connections |
-| `tests/test_autocycle_policy.py` | Unit tests for policy schema and validator |
-| `docs/handover/CURRENT_STATE.md` | Updated state document |
-| `docs/handover/savegame.md` | This file |
-| `data/system/task_queue.json` | REGIME-AUTOCYCLE-ARCH-001 marked DONE |
-
-### Autocycle policy key values
-
-| Field | Value |
-|---|---|
-| `enabled` | `false` |
-| `execution_allowed` | `false` |
-| `runtime_effect` | `false` |
-| `informational_only` | `true` |
-| `max_tasks_per_cycle` | `3` |
-| `allowed_risk_levels` | `["LOW"]` |
-| `commit_requires_human_approval` | `true` |
-| `push_requires_human_approval` | `true` |
+validator created, tests written. Execution disabled. Human approval mandatory.
 
 ---
 
 ## 2026-06-07 — Foundation Created
 
-MarketRegimeBot Phase 1 foundation was completed. All work is documentation,
-schema, and planning only. No live connections, no execution, no broker access.
-
-### Defined regimes (informational only)
-
-- BULL_MARKET, BEAR_MARKET, SIDEWAYS_MARKET
-- HIGH_VOLATILITY, LOW_VOLATILITY
-- RISK_ON, RISK_OFF
-
-All regimes carry: `runtime_effect: false`, `execution_authority: false`, `informational_only: true`
+Phase 1 foundation completed. Regime registry (7 regimes), validators, tests.
+All dry-run. No broker, no orders, no live trading, no allocation.
 
 ---
 
 ## 2026-06-06 — Skeleton Created
 
-MarketRegimeBot was initialized as a standalone safe skeleton for future market
-regime detection in the NOVA ecosystem. Default result: UNKNOWN, confidence 0,
-dry_run: true. No broker, no orders, no live trading, no allocation.
+Initial bootstrap. Default result: UNKNOWN, confidence 0, dry_run: true.
+
+---
+
+## 2026-06-07 — NOVA Development Standard Applied
+
+Added NOVA development standard documentation, schema, validator, and tests
+(adapted from NovaBotV2Options). Validator confirms status=OK. All new tests pass.
+No code, broker, scheduler, Telegram, credentials, or execution changes.
+
+### Files created
+
+| File | Description |
+|---|---|
+| docs/architecture/nova_development_standard.md | NOVA development standard documentation |
+| data/system/development_standard.json | Machine-readable development standard schema |
+| utils/development_standard_validator.py | Reporting-only validator |
+| 	ests/test_development_standard.py | 10 tests covering valid, invalid, and safety checks |
+
+### Validations run
+
+- python -m unittest tests.test_development_standard — OK
+- python -m utils.development_standard_validator — validation_status=OK
+- python -m json.tool data\system\development_standard.json — OK
+- python -m unittest discover tests — all tests pass
+- git diff --check — no whitespace errors
+
+### Safety review
+
+- No broker imports. No IBKR/TWS. No order placement. No live trading.
+- No scheduler activation. No Telegram execution. No .env. No credentials.
+- Validator is reporting-only. No runtime effect. No automatic money movement.
+
+### Commit/push status
+
+No commit. No push. Awaiting explicit human approval.
