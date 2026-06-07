@@ -1,0 +1,82 @@
+{
+  "_schema_version": "1.0.0",
+  "_description": "Canonical registry of market regimes recognised by MarketRegimeBot. All entries are informational only. No entry carries execution authority or runtime trading effect.",
+  "_safety": {
+    "execution_authority": false,
+    "broker_authority": false,
+    "order_authority": false,
+    "runtime_effect": false
+  },
+  "regimes": [
+    {
+      "id": "BULL_MARKET",
+      "label": "Bull Market",
+      "enabled": true,
+      "description": "Sustained upward price trend across broad market indices with improving breadth and positive momentum.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["trend", "directional", "equities"]
+    },
+    {
+      "id": "BEAR_MARKET",
+      "label": "Bear Market",
+      "enabled": true,
+      "description": "Sustained downward price trend of 20% or more from recent highs across broad market indices.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["trend", "directional", "equities"]
+    },
+    {
+      "id": "SIDEWAYS_MARKET",
+      "label": "Sideways Market",
+      "enabled": true,
+      "description": "Range-bound price action with no clear directional trend. Also known as a consolidation or ranging regime.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["range", "consolidation", "equities"]
+    },
+    {
+      "id": "HIGH_VOLATILITY",
+      "label": "High Volatility",
+      "enabled": true,
+      "description": "Elevated implied or realised volatility relative to historical norms. Typically associated with VIX above 25–30.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["volatility", "risk", "options"]
+    },
+    {
+      "id": "LOW_VOLATILITY",
+      "label": "Low Volatility",
+      "enabled": true,
+      "description": "Suppressed implied or realised volatility relative to historical norms. Typically associated with VIX below 15.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["volatility", "risk", "options"]
+    },
+    {
+      "id": "RISK_ON",
+      "label": "Risk On",
+      "enabled": true,
+      "description": "Market participants are favouring higher-risk assets (equities, high-yield, commodities) over safe-havens.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["sentiment", "cross-asset", "macro"]
+    },
+    {
+      "id": "RISK_OFF",
+      "label": "Risk Off",
+      "enabled": true,
+      "description": "Market participants are rotating into safe-haven assets (bonds, gold, USD) away from risk assets.",
+      "informational_only": true,
+      "runtime_effect": false,
+      "execution_authority": false,
+      "tags": ["sentiment", "cross-asset", "macro"]
+    }
+  ]
+}

@@ -1,10 +1,17 @@
 [
   {
     "id": "REGIME-PHASE-001",
-    "title": "Skeleton + contracts",
+    "title": "Skeleton + contracts + foundation",
     "phase": "PHASE_1",
-    "status": "TODO",
-    "risk": "LOW"
+    "status": "DONE",
+    "risk": "LOW",
+    "completed": "2026-06-07",
+    "deliverables": [
+      "ROADMAP.md",
+      "data/system/regime_registry.json",
+      "utils/regime_registry_validator.py",
+      "tests/test_regime_registry.py"
+    ]
   },
   {
     "id": "REGIME-PHASE-002",
@@ -42,4 +49,3 @@
     "risk": "MEDIUM"
   }
 ]
-
