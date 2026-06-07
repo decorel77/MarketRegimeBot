@@ -30,7 +30,7 @@ MarketRegimeBot carries these constraints in every phase without exception:
 
 ## Phase 1 — Project Foundation
 
-**Status:** In Progress
+**Status:** Complete (2026-06-07)
 
 **Goal:** Establish the project skeleton, contracts, and documentation baseline.
 
@@ -39,7 +39,18 @@ MarketRegimeBot carries these constraints in every phase without exception:
 - `data/system/regime_registry.json` — canonical list of recognised regimes
 - `utils/regime_registry_validator.py` — offline schema validator
 - `tests/test_regime_registry.py` — registry unit tests
+- `docs/architecture/autocycle_architecture.md` — 8-phase autocycle architecture
+- `data/system/autocycle_policy.json` — autocycle policy schema (execution disabled)
+- `utils/autocycle_policy_validator.py` — offline policy validator
+- `tests/test_autocycle_policy.py` — policy unit tests
+- `docs/architecture/sequential_autocycle_dev_prompt.md` — reusable dev prompt template
 - Updated `docs/handover/CURRENT_STATE.md` and `savegame.md`
+
+**Known structural issue (to resolve in Phase 2):**
+The runtime classifier (`core/regime_classifier.py`) and contracts (`core/regime_contracts.py`)
+use short regime IDs (`BULL`, `BEAR`, `SIDEWAYS`) while the registry uses full IDs
+(`BULL_MARKET`, `BEAR_MARKET`, `SIDEWAYS_MARKET`). These must be aligned before
+live data is wired to the registry.
 
 **Safety:** Inert. No connections. No runtime effects. No execution.
 

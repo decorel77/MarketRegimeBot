@@ -3,6 +3,7 @@
     "id": "REGIME-PHASE-001",
     "title": "Skeleton + contracts + foundation",
     "phase": "PHASE_1",
+    "roadmap_phase_ref": "Phase 1 — Project Foundation",
     "status": "DONE",
     "risk": "LOW",
     "completed": "2026-06-07",
@@ -17,6 +18,7 @@
     "id": "REGIME-AUTOCYCLE-ARCH-001",
     "title": "Autocycle architecture preparation",
     "phase": "PHASE_1",
+    "roadmap_phase_ref": "Phase 1 — Project Foundation",
     "status": "DONE",
     "risk": "LOW",
     "completed": "2026-06-07",
@@ -29,38 +31,65 @@
     ]
   },
   {
-    "id": "REGIME-PHASE-002",
-    "title": "Read market index data read-only",
+    "id": "REGIME-PHASE-002A",
+    "title": "Regime definitions documentation and naming alignment",
     "phase": "PHASE_2",
+    "roadmap_phase_ref": "Phase 2 — Regime Definitions",
     "status": "TODO",
-    "risk": "LOW"
+    "risk": "LOW",
+    "task_type": "DOCS_SCHEMA",
+    "autocycle_eligible": true,
+    "note": "Documentation and schema task only. Create docs/regime_definitions.md with full regime vocabulary. Align registry IDs with classifier/contracts (BULL_MARKET vs BULL mismatch). Add scoring_hints and signal fields to regime_registry.json. No code changes to classifier or contracts — only documentation and registry schema expansion. Must resolve naming inconsistency in schema before Phase 2B can proceed."
+  },
+  {
+    "id": "REGIME-PHASE-002B",
+    "title": "Read market index data read-only (implementation)",
+    "phase": "PHASE_2",
+    "roadmap_phase_ref": "Phase 4 — Read-Only Market Analysis",
+    "status": "TODO",
+    "risk": "LOW",
+    "task_type": "CODE",
+    "autocycle_eligible": false,
+    "note": "Implementation task — not eligible for autocycle. Implement read-only market data adapter in core/market_data_reader.py using static fixture files or public read-only sources. Requires human review before commit. Depends on REGIME-PHASE-002A (naming alignment) being complete."
   },
   {
     "id": "REGIME-PHASE-003",
     "title": "Volatility regime detection",
     "phase": "PHASE_3",
+    "roadmap_phase_ref": "Phase 3 — Regime Scoring Engine",
     "status": "TODO",
-    "risk": "MEDIUM"
+    "risk": "MEDIUM",
+    "task_type": "CODE",
+    "autocycle_eligible": false
   },
   {
     "id": "REGIME-PHASE-004",
     "title": "Risk-on/risk-off classifier",
     "phase": "PHASE_4",
+    "roadmap_phase_ref": "Phase 3 — Regime Scoring Engine",
     "status": "TODO",
-    "risk": "MEDIUM"
+    "risk": "MEDIUM",
+    "task_type": "CODE",
+    "autocycle_eligible": false
   },
   {
     "id": "REGIME-PHASE-005",
     "title": "AllocationBot snapshot integration",
     "phase": "PHASE_5",
+    "roadmap_phase_ref": "Phase 7 — Read-Only Integration with NovaBotV2",
     "status": "TODO",
-    "risk": "MEDIUM"
+    "risk": "MEDIUM",
+    "task_type": "CODE",
+    "autocycle_eligible": false
   },
   {
     "id": "REGIME-PHASE-006",
     "title": "Human approval / dashboard output",
     "phase": "PHASE_6",
+    "roadmap_phase_ref": "Phase 6 — Strategy / Regime Compatibility Analysis",
     "status": "TODO",
-    "risk": "MEDIUM"
+    "risk": "MEDIUM",
+    "task_type": "DOCS_CODE",
+    "autocycle_eligible": false
   }
 ]
