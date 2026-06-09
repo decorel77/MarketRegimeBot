@@ -1,5 +1,5 @@
 {
-  "_schema_version": "1.0.0",
+  "_schema_version": "1.1.0",
   "_description": "Canonical registry of market regimes recognised by MarketRegimeBot. All entries are informational only. No entry carries execution authority or runtime trading effect.",
   "_safety": {
     "execution_authority": false,
@@ -7,76 +7,206 @@
     "order_authority": false,
     "runtime_effect": false
   },
+  "_naming_alignment": {
+    "note": "classifier_id records the ID used in core/regime_classifier.py and core/regime_contracts.py VALID_REGIMES. Where classifier_id differs from id, alignment is required before live data integration. See docs/regime_definitions.md for the alignment plan.",
+    "misaligned_pairs": [
+      {"registry_id": "BULL_MARKET",    "classifier_id": "BULL",     "resolution": "rename classifier to BULL_MARKET in REGIME-PHASE-002B"},
+      {"registry_id": "BEAR_MARKET",    "classifier_id": "BEAR",     "resolution": "rename classifier to BEAR_MARKET in REGIME-PHASE-002B"},
+      {"registry_id": "SIDEWAYS_MARKET","classifier_id": "SIDEWAYS", "resolution": "rename classifier to SIDEWAYS_MARKET in REGIME-PHASE-002B"}
+    ]
+  },
   "regimes": [
     {
       "id": "BULL_MARKET",
       "label": "Bull Market",
+      "classifier_id": "BULL",
+      "classifier_aligned": false,
       "enabled": true,
       "description": "Sustained upward price trend across broad market indices with improving breadth and positive momentum.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["trend", "directional", "equities"]
+      "tags": ["trend", "directional", "equities"],
+      "scoring_hints": {
+        "source": "core/regime_classifier.py",
+        "priority": 2,
+        "conditions": [
+          {"field": "trend_score",     "operator": "gt",  "value": 0.5,  "note": "_TREND_BULL_THRESHOLD"},
+          {"field": "volatility_score","operator": "lte", "value": 0.7,  "note": "_VOLATILITY_HIGH_THRESHOLD — must not be exceeded"}
+        ],
+        "confidence_formula": "min(100, int(trend_score * 100))",
+        "risk_level_rule": "NORMAL if trend_score < 0.85 else HIGH"
+      },
+      "signals": [
+        "Broad index above 200-day moving average",
+        "Advance/decline line trending upward",
+        "More 52-week highs than lows",
+        "VIX below 20",
+        "Investment-grade credit spreads tightening"
+      ]
     },
     {
       "id": "BEAR_MARKET",
       "label": "Bear Market",
+      "classifier_id": "BEAR",
+      "classifier_aligned": false,
       "enabled": true,
       "description": "Sustained downward price trend of 20% or more from recent highs across broad market indices.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["trend", "directional", "equities"]
+      "tags": ["trend", "directional", "equities"],
+      "scoring_hints": {
+        "source": "core/regime_classifier.py",
+        "priority": 3,
+        "conditions": [
+          {"field": "trend_score",     "operator": "lt",  "value": -0.5, "note": "_TREND_BEAR_THRESHOLD"},
+          {"field": "volatility_score","operator": "lte", "value": 0.7,  "note": "_VOLATILITY_HIGH_THRESHOLD — must not be exceeded"}
+        ],
+        "confidence_formula": "min(100, int(abs(trend_score) * 100))",
+        "risk_level_rule": "HIGH always"
+      },
+      "signals": [
+        "Broad index down 20% or more from recent high",
+        "Broad index below 200-day moving average",
+        "Advance/decline line in persistent downtrend",
+        "More 52-week lows than highs",
+        "Credit spreads widening"
+      ]
     },
     {
       "id": "SIDEWAYS_MARKET",
       "label": "Sideways Market",
+      "classifier_id": "SIDEWAYS",
+      "classifier_aligned": false,
       "enabled": true,
       "description": "Range-bound price action with no clear directional trend. Also known as a consolidation or ranging regime.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["range", "consolidation", "equities"]
+      "tags": ["range", "consolidation", "equities"],
+      "scoring_hints": {
+        "source": "core/regime_classifier.py",
+        "priority": 4,
+        "conditions": [
+          {"field": "trend_score_abs", "operator": "lte", "value": 0.5, "note": "abs(trend_score) <= _TREND_BULL_THRESHOLD"},
+          {"field": "volatility_score","operator": "lte", "value": 0.7, "note": "_VOLATILITY_HIGH_THRESHOLD — must not be exceeded"}
+        ],
+        "confidence_formula": "max(0, min(100, int((1.0 - abs(trend_score) - volatility_score) * 100)))",
+        "risk_level_rule": "LOW always"
+      },
+      "signals": [
+        "Price oscillating between defined support and resistance",
+        "ADX (Average Directional Index) below 20",
+        "Bollinger Bands contracting",
+        "Neutral advance/decline momentum"
+      ]
     },
     {
       "id": "HIGH_VOLATILITY",
       "label": "High Volatility",
+      "classifier_id": "HIGH_VOLATILITY",
+      "classifier_aligned": true,
       "enabled": true,
       "description": "Elevated implied or realised volatility relative to historical norms. Typically associated with VIX above 25–30.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["volatility", "risk", "options"]
+      "tags": ["volatility", "risk", "options"],
+      "scoring_hints": {
+        "source": "core/regime_classifier.py",
+        "priority": 1,
+        "conditions": [
+          {"field": "volatility_score","operator": "gt", "value": 0.7, "note": "_VOLATILITY_HIGH_THRESHOLD — highest priority, overrides all trend regimes"}
+        ],
+        "confidence_formula": "min(100, int(volatility_score * 100))",
+        "risk_level_rule": "HIGH always"
+      },
+      "signals": [
+        "VIX above 25-30",
+        "Realised 20-day volatility elevated relative to 1-year average",
+        "Large intraday price swings (ATR expansion)",
+        "Options implied volatility skew widening"
+      ]
     },
     {
       "id": "LOW_VOLATILITY",
       "label": "Low Volatility",
+      "classifier_id": null,
+      "classifier_aligned": null,
       "enabled": true,
       "description": "Suppressed implied or realised volatility relative to historical norms. Typically associated with VIX below 15.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["volatility", "risk", "options"]
+      "tags": ["volatility", "risk", "options"],
+      "scoring_hints": {
+        "source": "planned — REGIME-PHASE-003",
+        "priority": null,
+        "conditions": [
+          {"field": "volatility_score","operator": "lt", "value": 0.15, "note": "approximate — to be calibrated in Phase 3"}
+        ],
+        "confidence_formula": "planned",
+        "risk_level_rule": "LOW planned"
+      },
+      "signals": [
+        "VIX below 15",
+        "Realised 20-day volatility near multi-year lows",
+        "Tight Bollinger Bands",
+        "Low put/call ratio"
+      ]
     },
     {
       "id": "RISK_ON",
       "label": "Risk On",
+      "classifier_id": null,
+      "classifier_aligned": null,
       "enabled": true,
       "description": "Market participants are favouring higher-risk assets (equities, high-yield, commodities) over safe-havens.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["sentiment", "cross-asset", "macro"]
+      "tags": ["sentiment", "cross-asset", "macro"],
+      "scoring_hints": {
+        "source": "planned — REGIME-PHASE-003",
+        "priority": null,
+        "conditions": [],
+        "confidence_formula": "planned — requires cross-asset inputs",
+        "risk_level_rule": "NORMAL planned"
+      },
+      "signals": [
+        "Equities outperforming bonds (SPY/TLT ratio rising)",
+        "High-yield credit spreads tightening vs. investment-grade",
+        "Commodity prices rising",
+        "USD weakening vs. commodity-linked currencies (AUD, CAD)",
+        "Emerging market equities outperforming developed markets"
+      ]
     },
     {
       "id": "RISK_OFF",
       "label": "Risk Off",
+      "classifier_id": null,
+      "classifier_aligned": null,
       "enabled": true,
       "description": "Market participants are rotating into safe-haven assets (bonds, gold, USD) away from risk assets.",
       "informational_only": true,
       "runtime_effect": false,
       "execution_authority": false,
-      "tags": ["sentiment", "cross-asset", "macro"]
+      "tags": ["sentiment", "cross-asset", "macro"],
+      "scoring_hints": {
+        "source": "planned — REGIME-PHASE-003",
+        "priority": null,
+        "conditions": [],
+        "confidence_formula": "planned — requires cross-asset inputs",
+        "risk_level_rule": "HIGH planned"
+      },
+      "signals": [
+        "Bonds outperforming equities (TLT/SPY ratio rising)",
+        "USD and JPY strengthening",
+        "Gold rising",
+        "High-yield spreads widening sharply",
+        "Emerging market equities and currencies weakening"
+      ]
     }
   ]
 }

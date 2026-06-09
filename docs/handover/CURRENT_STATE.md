@@ -1,8 +1,8 @@
 # Current State
 
-## MarketRegimeBot — Structure Readiness Confirmed — 2026-06-07
+## MarketRegimeBot — Regime Definitions Complete — 2026-06-07
 
-Status: FOUNDATION_COMPLETE / STRUCTURE_READY / AUTOCYCLE_PREP_COMPLETE / SAFE_PLANNING_ONLY
+Status: PHASE_2_DOCS_SCHEMA_COMPLETE / SAFE_PLANNING_ONLY
 
 MarketRegimeBot is a standalone NOVA ecosystem service for future market regime
 detection. All current work is documentation, schema, and planning only.
@@ -14,16 +14,15 @@ detection. All current work is documentation, schema, and planning only.
 | Artifact | Path | Purpose |
 |---|---|---|
 | Roadmap | `ROADMAP.md` | 10-phase development roadmap (Phase 1 complete) |
-| Regime registry | `data/system/regime_registry.json` | Canonical regime schema (7 regimes) |
-| Registry validator | `utils/regime_registry_validator.py` | Offline schema validator |
-| Registry tests | `tests/test_regime_registry.py` | Unit tests for registry and validator |
+| Regime registry | `data/system/regime_registry.json` | Regime schema v1.1.0 — 7 regimes with classifier_id, scoring_hints, signals |
+| Regime definitions | `docs/regime_definitions.md` | Full regime vocabulary, naming alignment plan, scoring thresholds |
+| Registry validator | `utils/regime_registry_validator.py` | Offline schema validator (v1.1.0 aware) |
+| Registry tests | `tests/test_regime_registry.py` | 57 unit tests — includes naming alignment and v1.1.0 field coverage |
 | Autocycle architecture | `docs/architecture/autocycle_architecture.md` | 8-phase autocycle design (planning only) |
 | Autocycle policy | `data/system/autocycle_policy.json` | Policy schema — execution disabled |
 | Autocycle validator | `utils/autocycle_policy_validator.py` | Offline policy validator |
-| Autocycle tests | `tests/test_autocycle_policy.py` | Unit tests for policy schema and validator |
+| Autocycle tests | `tests/test_autocycle_policy.py` | 41 unit tests |
 | Autocycle dev prompt | `docs/architecture/sequential_autocycle_dev_prompt.md` | Reusable autocycle prompt template |
-| Agent state | `data/system/agent_state.json` | Current phase and safety lock state |
-| Task queue | `data/system/task_queue.json` | Ordered task list with autocycle eligibility |
 | Skeleton core | `core/` | Inert regime classifier returning UNKNOWN |
 | Result snapshot | `data/system/result_snapshot.json` | Dry-run output artifact |
 
@@ -36,33 +35,24 @@ detection. All current work is documentation, schema, and planning only.
 - Does not read live market data.
 - Does not export allocations or modify other NOVA repositories.
 - All validators and tests are fully offline — no network, no broker, no APIs.
-- Autocycle preparation completed. Autocycle execution is NOT implemented.
-- Human approval remains mandatory before any commit or push.
+- Autocycle execution is NOT implemented. Human approval mandatory.
 
 ---
 
-### Known structural issues (documented, not yet fixed)
+### Naming alignment status (updated)
 
-| Issue | Impact | Resolution |
-|---|---|---|
-| Classifier/contracts use short IDs (`BULL`, `BEAR`, `SIDEWAYS`); registry uses full IDs (`BULL_MARKET`, `BEAR_MARKET`, `SIDEWAYS_MARKET`) | No runtime impact while dry-run only; will block live data integration | Must align in REGIME-PHASE-002A before implementation begins |
-| task_queue PHASE numbering does not map 1:1 to ROADMAP phases | Documentation only — no runtime impact | `roadmap_phase_ref` field added to each task for cross-reference |
+The registry (v1.1.0) now formally documents the naming mismatch between the
+classifier/contracts and the registry IDs. The mismatch is enforced by tests.
 
----
-
-### Autocycle status
-
-| Property | Value |
-|---|---|
-| Autocycle architecture | Documented |
-| Autocycle policy | Defined |
-| Autocycle dev prompt template | Created |
-| Autocycle implementation | NOT STARTED |
-| Autocycle execution | DISABLED (`execution_allowed: false`) |
-| Autocycle enabled | FALSE |
-| Commit autonomy | DISABLED (`commit_requires_human_approval: true`) |
-| Push autonomy | DISABLED (`push_requires_human_approval: true`) |
-| Next autocycle-eligible task | `REGIME-PHASE-002A` — Regime definitions + naming alignment |
+| Registry ID | Classifier ID | Aligned | Resolution |
+|---|---|---|---|
+| `BULL_MARKET` | `BULL` | NO | REGIME-PHASE-002B — rename classifier |
+| `BEAR_MARKET` | `BEAR` | NO | REGIME-PHASE-002B — rename classifier |
+| `SIDEWAYS_MARKET` | `SIDEWAYS` | NO | REGIME-PHASE-002B — rename classifier |
+| `HIGH_VOLATILITY` | `HIGH_VOLATILITY` | YES | No action needed |
+| `LOW_VOLATILITY` | *(not implemented)* | N/A | REGIME-PHASE-003 |
+| `RISK_ON` | *(not implemented)* | N/A | REGIME-PHASE-003 |
+| `RISK_OFF` | *(not implemented)* | N/A | REGIME-PHASE-003 |
 
 ---
 
@@ -70,9 +60,9 @@ detection. All current work is documentation, schema, and planning only.
 
 | ID | Title | Status | Risk | Autocycle eligible |
 |---|---|---|---|---|
-| REGIME-PHASE-002A | Regime definitions documentation and naming alignment | TODO | LOW | YES |
-| REGIME-PHASE-002B | Read market index data read-only (implementation) | TODO | LOW | NO (CODE) |
+| REGIME-PHASE-002B | Read market index data + classifier ID alignment | TODO | LOW | NO (CODE) |
 | REGIME-PHASE-003 | Volatility regime detection | TODO | MEDIUM | NO |
+| REGIME-PHASE-004 | Risk-on/risk-off classifier | TODO | MEDIUM | NO |
 
 ---
 
@@ -95,11 +85,24 @@ detection. All current work is documentation, schema, and planning only.
 
 ### What does NOT exist yet
 
-- Regime definitions documentation (`docs/regime_definitions.md`) — next task
-- Registry naming alignment (BULL_MARKET vs BULL) — next task
-- Autocycle runtime implementation (architecture only)
-- Live market data reader
-- Regime scoring engine
-- Historical tracking
-- NovaBotV2 integration
-- NovaBotV2Options integration
+- Classifier ID alignment (BULL → BULL_MARKET etc.) — REGIME-PHASE-002B
+- Live market data reader — REGIME-PHASE-002B
+- Regime scoring engine — REGIME-PHASE-003
+- Historical tracking — REGIME-PHASE-005
+- NovaBotV2 integration — REGIME-PHASE-007
+- NovaBotV2Options integration — REGIME-PHASE-008
+
+---
+
+### Guardrails authority
+
+| Artifact | Path |
+|---|---|
+| Guardrails document | `docs/architecture/guardrails.md` |
+| Guardrails policy | `data/system/guardrails.json` |
+| Guardrails validator | `utils/guardrails_validator.py` |
+| Guardrails tests | `tests/test_guardrails.py` |
+
+All guardrails fields confirmed: `runtime_effect=false`, `broker_access_allowed=false`,
+`order_execution_allowed=false`, `commit_requires_human_approval=true`,
+`push_requires_human_approval=true`.
