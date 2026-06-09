@@ -1,0 +1,16 @@
+{
+  "confidence": 80,
+  "dry_run": true,
+  "generated_at": "2026-06-09T20:19:18.378578+00:00",
+  "input_source": "explicit",
+  "market_regime": "BULL",
+  "project": "MarketRegimeBot",
+  "read_only": true,
+  "reason": [
+    "Strong positive trend score 0.80"
+  ],
+  "risk_level": "NORMAL",
+  "runtime_enabled": false,
+  "schema_version": "regime_export.v1",
+  "volatility_env": "LOW_VOL"
+}

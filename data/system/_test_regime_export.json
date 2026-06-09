@@ -1,0 +1,16 @@
+{
+  "confidence": 75,
+  "dry_run": true,
+  "generated_at": "2026-06-09T20:19:18.250953+00:00",
+  "input_source": "yfinance",
+  "market_regime": "BULL",
+  "project": "MarketRegimeBot",
+  "read_only": true,
+  "reason": [
+    "Strong trend"
+  ],
+  "risk_level": "NORMAL",
+  "runtime_enabled": false,
+  "schema_version": "regime_export.v1",
+  "volatility_env": "LOW_VOL"
+}

@@ -244,7 +244,7 @@
     "id": "REGIME-TACTICBOT-001",
     "title": "TacticBot-compatible regime export format",
     "phase": "PHASE_5",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "P2",
     "risk": "LOW",
     "task_type": "integration",
@@ -255,6 +255,13 @@
     "allowed_under_current_architecture": true,
     "runtime_effect": false,
     "broker_execution": false,
-    "live_trading_readiness": "not_applicable"
+    "live_trading_readiness": "not_applicable",
+    "completed": "2026-06-09",
+    "deliverables": [
+      "docs/regime_export_schema.md",
+      "utils/regime_export_writer.py",
+      "tests/test_regime_export_writer.py",
+      "workflow/regime_cycle.py (write_export wiring)"
+    ]
   }
 ]

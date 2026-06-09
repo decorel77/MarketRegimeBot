@@ -14,6 +14,7 @@ from core.regime_contracts import (
 )
 from core.snapshot_adapter import load_regime_input_from_snapshots
 from core.volatility_classifier import classify_volatility
+from utils.regime_export_writer import write_regime_export
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_SNAPSHOT_PATH = PROJECT_ROOT / "data" / "system" / "result_snapshot.json"
@@ -61,6 +62,7 @@ def run_regime_cycle(
     inputs: RegimeInput | None = None,
     use_snapshot_inputs: bool = True,
     use_market_data: bool = True,
+    write_export: bool = True,
     _download_fn=None,
 ) -> dict[str, Any]:
     """Run one classification cycle.
@@ -73,6 +75,7 @@ def run_regime_cycle(
 
     Never writes to sibling projects.
     ``_download_fn`` is injected in tests to avoid live network calls.
+    ``write_export`` controls whether regime_export.json is written.
     """
     if inputs is not None:
         effective_inputs = inputs
@@ -93,6 +96,9 @@ def run_regime_cycle(
     output_path = None
     if write_snapshot:
         output_path = str(write_result_snapshot(decision))
+    export_path = None
+    if write_export:
+        export_path = str(write_regime_export(decision))
     return {
         "status": decision.status,
         "dry_run": decision.dry_run,
@@ -103,5 +109,6 @@ def run_regime_cycle(
         "volatility_env": decision.volatility_env,
         "input_source": input_source,
         "result_snapshot_path": output_path,
+        "regime_export_path": export_path,
         "decision": decision.to_dict(),
     }
