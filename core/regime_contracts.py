@@ -51,6 +51,9 @@ class RegimeSafetyState:
             )
 
 
+VALID_VOL_ENVS = {"LOW_VOL", "NORMAL", "HIGH_VOL", "UNKNOWN"}
+
+
 @dataclass(frozen=True)
 class RegimeDecision:
     project: str
@@ -60,6 +63,8 @@ class RegimeDecision:
     risk_level: str
     safety: RegimeSafetyState
     reason: tuple[str, ...] = ()
+    volatility_env: str = "UNKNOWN"
+    input_source: str = "unknown"
 
     def validate(self) -> None:
         self.safety.validate()
@@ -71,6 +76,8 @@ class RegimeDecision:
             raise RegimeValidationError("Unknown risk level.")
         if not 0 <= self.confidence <= 100:
             raise RegimeValidationError("Confidence must be between 0 and 100.")
+        if self.volatility_env not in VALID_VOL_ENVS:
+            raise RegimeValidationError(f"Unknown volatility_env: {self.volatility_env}")
 
     @property
     def dry_run(self) -> bool:

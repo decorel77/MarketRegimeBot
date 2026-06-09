@@ -1,4 +1,4 @@
-"""Tests for workflow/regime_cycle.py — Phase 2 snapshot and safety."""
+"""Tests for workflow/regime_cycle.py — Phase 2 snapshot and safety, Phase 3 market data."""
 
 import json
 import sys
@@ -54,8 +54,12 @@ class SnapshotGenerationTests(unittest.TestCase):
         self.assertIsInstance(payload["reason"], list)
 
     def test_default_synthetic_inputs_produce_bull(self):
-        # DRY_RUN_INPUTS = trend=0.8, vol=0.2 → BULL
-        result = regime_cycle.run_regime_cycle(write_snapshot=False)
+        # DRY_RUN_INPUTS = trend=0.8, vol=0.2 → BULL (synthetic fallback path)
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            use_market_data=False,
+            use_snapshot_inputs=False,
+        )
         self.assertEqual(result["regime"], "BULL")
         self.assertEqual(result["confidence"], 80)
 
@@ -108,6 +112,144 @@ class DryRunSafetyTests(unittest.TestCase):
         result = regime_cycle.run_regime_cycle(write_snapshot=False)
         self.assertGreaterEqual(result["confidence"], 0)
         self.assertLessEqual(result["confidence"], 100)
+
+
+class Phase3MarketDataTests(unittest.TestCase):
+    """Phase 3: verify volatility_env field and _download_fn injection."""
+
+    def _make_mock_download(self, spy_closes, qqq_closes, vix_close):
+        """Return a callable that mimics yfinance.download for tests."""
+        import pandas as pd
+
+        spy = spy_closes
+        qqq = qqq_closes
+
+        def mock_download(tickers, **kwargs):
+            if isinstance(tickers, str):
+                # VIX single-ticker call
+                idx = pd.date_range("2026-01-01", periods=len([vix_close]), freq="B")
+                df = pd.DataFrame({"Close": [vix_close]}, index=idx)
+                return df
+            # Multi-ticker call: SPY + QQQ
+            n = max(len(spy), len(qqq))
+            idx = pd.date_range("2026-01-01", periods=n, freq="B")
+            cols = pd.MultiIndex.from_arrays(
+                [["Close", "Close"], ["QQQ", "SPY"]],
+                names=["Price", "Ticker"],
+            )
+            data = {("Close", "SPY"): spy[:n], ("Close", "QQQ"): qqq[:n]}
+            df = pd.DataFrame(data, index=idx[:n])
+            df.columns = pd.MultiIndex.from_tuples(
+                list(data.keys()), names=["Price", "Ticker"]
+            )
+            return df
+
+        return mock_download
+
+    def test_result_contains_volatility_env(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            inputs=RegimeInput(trend_score=0.6, volatility_score=0.2),
+        )
+        self.assertIn("volatility_env", result)
+
+    def test_low_vol_score_produces_low_vol_env(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            inputs=RegimeInput(trend_score=0.6, volatility_score=0.1),
+        )
+        self.assertEqual(result["volatility_env"], "LOW_VOL")
+
+    def test_mid_vol_score_produces_normal_env(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            inputs=RegimeInput(trend_score=0.6, volatility_score=0.45),
+        )
+        self.assertEqual(result["volatility_env"], "NORMAL")
+
+    def test_high_vol_score_produces_high_vol_env(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            inputs=RegimeInput(trend_score=0.0, volatility_score=0.8),
+        )
+        self.assertEqual(result["volatility_env"], "HIGH_VOL")
+
+    def test_input_source_in_result(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            inputs=RegimeInput(trend_score=0.6, volatility_score=0.2),
+        )
+        self.assertIn("input_source", result)
+        self.assertEqual(result["input_source"], "explicit")
+
+    def test_snapshot_contains_volatility_env(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=True,
+            inputs=RegimeInput(trend_score=0.6, volatility_score=0.2),
+        )
+        payload = json.loads(
+            Path(result["result_snapshot_path"]).read_text(encoding="utf-8")
+        )
+        self.assertIn("volatility_env", payload)
+
+    def test_snapshot_contains_input_source(self):
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=True,
+            inputs=RegimeInput(trend_score=0.6, volatility_score=0.2),
+        )
+        payload = json.loads(
+            Path(result["result_snapshot_path"]).read_text(encoding="utf-8")
+        )
+        self.assertIn("input_source", payload)
+
+    def test_download_fn_injection_produces_yfinance_source(self):
+        closes = [100.0 + i for i in range(22)]
+        mock_fn = self._make_mock_download(closes, closes, 18.0)
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            use_market_data=True,
+            _download_fn=mock_fn,
+        )
+        self.assertEqual(result["input_source"], "yfinance")
+
+    def test_download_fn_injection_produces_valid_regime(self):
+        closes = [100.0 + i for i in range(22)]
+        mock_fn = self._make_mock_download(closes, closes, 18.0)
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            use_market_data=True,
+            _download_fn=mock_fn,
+        )
+        from core.regime_contracts import VALID_REGIMES
+        self.assertIn(result["regime"], VALID_REGIMES)
+
+    def test_market_data_failure_falls_back_to_snapshot_adapter(self):
+        def failing_download(*a, **kw):
+            raise RuntimeError("network error")
+
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            use_market_data=True,
+            _download_fn=failing_download,
+        )
+        # Falls back gracefully — should not raise
+        self.assertIn("regime", result)
+
+    def test_use_market_data_false_skips_yfinance(self):
+        called = []
+
+        def spy_fn(*a, **kw):
+            called.append(1)
+            raise RuntimeError("should not be called")
+
+        result = regime_cycle.run_regime_cycle(
+            write_snapshot=False,
+            use_market_data=False,
+            _download_fn=spy_fn,
+        )
+        # _download_fn only used when use_market_data=True
+        self.assertEqual(called, [])
+        self.assertIn("regime", result)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,12 @@
 # Current State
 
-## MarketRegimeBot — Phase 2B Market Data Reader — 2026-06-09
+## MarketRegimeBot — Phase 3 Volatility Classifier — 2026-06-09
 
-Status: PHASE_2B_MARKET_DATA_READER_COMPLETE / ADVISORY_ONLY
+Status: PHASE_3_VOLATILITY_CLASSIFIER_COMPLETE / ADVISORY_ONLY
 
-MarketRegimeBot is a standalone NOVA ecosystem service for future market regime
-detection. All current work is documentation, schema, and planning only.
+MarketRegimeBot is a standalone NOVA ecosystem service for market regime detection.
+Phase 3 delivers live yfinance-driven classification with dedicated volatility environment
+labeling (HIGH_VOL / NORMAL / LOW_VOL).
 
 ---
 
@@ -13,97 +14,81 @@ detection. All current work is documentation, schema, and planning only.
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| Roadmap | `ROADMAP.md` | 10-phase development roadmap (Phase 1 complete) |
-| Regime registry | `data/system/regime_registry.json` | Regime schema v1.1.0 — 7 regimes with classifier_id, scoring_hints, signals |
-| Regime definitions | `docs/regime_definitions.md` | Full regime vocabulary, naming alignment plan, scoring thresholds |
-| Registry validator | `utils/regime_registry_validator.py` | Offline schema validator (v1.1.0 aware) |
-| Registry tests | `tests/test_regime_registry.py` | 57 unit tests — includes naming alignment and v1.1.0 field coverage |
-| Autocycle architecture | `docs/architecture/autocycle_architecture.md` | 8-phase autocycle design (planning only) |
+| Roadmap | `ROADMAP.md` | 10-phase development roadmap |
+| Regime registry | `data/system/regime_registry.json` | Regime schema v1.1.0 — 7 regimes |
+| Regime definitions | `docs/regime_definitions.md` | Full regime vocabulary and scoring thresholds |
+| Registry validator | `utils/regime_registry_validator.py` | Offline schema validator |
+| Autocycle architecture | `docs/architecture/autocycle_architecture.md` | 8-phase autocycle design |
 | Autocycle policy | `data/system/autocycle_policy.json` | Policy schema — execution disabled |
 | Autocycle validator | `utils/autocycle_policy_validator.py` | Offline policy validator |
-| Autocycle tests | `tests/test_autocycle_policy.py` | 41 unit tests |
-| Autocycle dev prompt | `docs/architecture/sequential_autocycle_dev_prompt.md` | Reusable autocycle prompt template |
-| Skeleton core | `core/` | Inert regime classifier returning UNKNOWN |
-| **Market data reader** | `core/market_data_reader.py` | **NEW** yfinance reader for SPY/QQQ/VIX → RegimeInput. Fails closed. ADVISORY_ONLY. (REGIME-PHASE-002B / MASTER-012) |
-| Result snapshot | `data/system/result_snapshot.json` | Dry-run output artifact |
+| Regime classifier | `core/regime_classifier.py` | BULL/BEAR/SIDEWAYS/HIGH_VOLATILITY classifier |
+| Regime contracts | `core/regime_contracts.py` | `RegimeDecision` (now includes `volatility_env`, `input_source`) |
+| **Volatility classifier** | `core/volatility_classifier.py` | **NEW** HIGH_VOL/NORMAL/LOW_VOL from vol_score. VIX mapping. ADVISORY_ONLY. (REGIME-PHASE-003 / MASTER-016) |
+| **Market data reader** | `core/market_data_reader.py` | yfinance reader for SPY/QQQ/VIX → RegimeInput. Fails closed. (REGIME-PHASE-002B / MASTER-012) |
+| Snapshot adapter | `core/snapshot_adapter.py` | Reads sibling project snapshots |
+| **Regime cycle (Phase 3)** | `workflow/regime_cycle.py` | **UPDATED** Input priority: explicit > yfinance > snapshot > DRY_RUN_INPUTS. Outputs `volatility_env` and `input_source`. |
+| Result snapshot | `data/system/result_snapshot.json` | Dry-run output artifact (now includes `volatility_env`, `input_source`) |
 
 ---
 
-### Current behaviour
+### Current behaviour (Phase 3)
 
-- Produces a safe dry-run regime result (UNKNOWN, confidence 0).
+- Classifies market regime from live yfinance SPY/QQQ/VIX data (when available).
+- Input source priority: explicit inputs → yfinance live data → snapshot adapter → DRY_RUN_INPUTS.
 - Writes only `data/system/result_snapshot.json` inside this project.
-- Does not read live market data.
-- Does not export allocations or modify other NOVA repositories.
-- All validators and tests are fully offline — no network, no broker, no APIs.
-- Autocycle execution is NOT implemented. Human approval mandatory.
+- `volatility_env` field (HIGH_VOL / NORMAL / LOW_VOL) computed from VIX-derived volatility_score.
+- `input_source` field records which data source was used.
+- Fails closed: any yfinance failure → falls back to snapshot adapter → falls back to synthetic inputs.
+- No broker access. No writes to other NOVA repositories. Advisory only.
 
 ---
 
-### Naming alignment status (updated)
+### Volatility environment thresholds
 
-The registry (v1.1.0) now formally documents the naming mismatch between the
-classifier/contracts and the registry IDs. The mismatch is enforced by tests.
+| vol_score | volatility_env | VIX equivalent |
+|---|---|---|
+| < 0.30 | LOW_VOL | VIX < ~22.5 |
+| 0.30 – 0.60 | NORMAL | VIX ~22.5–30 |
+| ≥ 0.60 | HIGH_VOL | VIX ≥ ~30 |
 
-| Registry ID | Classifier ID | Aligned | Resolution |
-|---|---|---|---|
-| `BULL_MARKET` | `BULL` | NO | REGIME-PHASE-002B — rename classifier |
-| `BEAR_MARKET` | `BEAR` | NO | REGIME-PHASE-002B — rename classifier |
-| `SIDEWAYS_MARKET` | `SIDEWAYS` | NO | REGIME-PHASE-002B — rename classifier |
-| `HIGH_VOLATILITY` | `HIGH_VOLATILITY` | YES | No action needed |
-| `LOW_VOLATILITY` | *(not implemented)* | N/A | REGIME-PHASE-003 |
-| `RISK_ON` | *(not implemented)* | N/A | REGIME-PHASE-003 |
-| `RISK_OFF` | *(not implemented)* | N/A | REGIME-PHASE-003 |
+---
+
+### Naming alignment status
+
+The naming mismatch between classifier IDs and registry IDs remains unresolved
+(BULL vs BULL_MARKET etc.). Tracked under REGIME-PHASE-002B.
+
+---
+
+### Tests (248 passing)
+
+| File | Tests |
+|---|---|
+| `tests/test_regime_registry.py` | 57 |
+| `tests/test_autocycle_policy.py` | 41 |
+| `tests/test_regime_classifier.py` | — |
+| `tests/test_regime_contracts.py` | — |
+| `tests/test_market_data_reader.py` | 28 |
+| `tests/test_volatility_classifier.py` | **NEW** 20+ |
+| `tests/test_regime_cycle.py` | updated (Phase 3 tests) |
 
 ---
 
 ### Task queue — next tasks
 
-| ID | Title | Status | Risk | Autocycle eligible |
-|---|---|---|---|---|
-| REGIME-PHASE-002B | Read market index data + classifier ID alignment | TODO | LOW | NO (CODE) |
-| REGIME-PHASE-003 | Volatility regime detection | TODO | MEDIUM | NO |
-| REGIME-PHASE-004 | Risk-on/risk-off classifier | TODO | MEDIUM | NO |
+| ID | Title | Status | Blocked by |
+|---|---|---|---|
+| REGIME-PHASE-003 | Volatility regime detection | **DONE** | — |
+| REGIME-TACTICBOT-001 | TacticBot-compatible export schema | TODO | MASTER-017 |
+| REGIME-PHASE-004 | Risk-on/risk-off classifier | TODO | — |
 
 ---
 
 ### Safety lock (all phases)
 
-- No broker execution.
-- No order placement.
-- No live trading.
-- No money movement.
-- No allocation export.
+- No broker execution, no order placement, no live trading.
+- No money movement, no allocation export.
 - No writes to other NOVA repositories.
-- No broker API connections.
-- No credential access.
-- No execution authority.
-- No scheduler authority over other bots.
-- No autonomous commits.
-- No autonomous pushes.
-
----
-
-### What does NOT exist yet
-
-- Classifier ID alignment (BULL → BULL_MARKET etc.) — REGIME-PHASE-002B
-- Live market data reader — REGIME-PHASE-002B
-- Regime scoring engine — REGIME-PHASE-003
-- Historical tracking — REGIME-PHASE-005
-- NovaBotV2 integration — REGIME-PHASE-007
-- NovaBotV2Options integration — REGIME-PHASE-008
-
----
-
-### Guardrails authority
-
-| Artifact | Path |
-|---|---|
-| Guardrails document | `docs/architecture/guardrails.md` |
-| Guardrails policy | `data/system/guardrails.json` |
-| Guardrails validator | `utils/guardrails_validator.py` |
-| Guardrails tests | `tests/test_guardrails.py` |
-
-All guardrails fields confirmed: `runtime_effect=false`, `broker_access_allowed=false`,
-`order_execution_allowed=false`, `commit_requires_human_approval=true`,
-`push_requires_human_approval=true`.
+- No broker API connections, no credential access.
+- No execution authority, no scheduler authority.
+- No autonomous commits or pushes.

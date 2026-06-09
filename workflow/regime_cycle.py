@@ -1,4 +1,4 @@
-"""Safe dry-run regime cycle for MarketRegimeBot."""
+"""Safe regime cycle for MarketRegimeBot — Phase 3 with live market data."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from core.regime_contracts import (
     build_unknown_regime_decision,
 )
 from core.snapshot_adapter import load_regime_input_from_snapshots
+from core.volatility_classifier import classify_volatility
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_SNAPSHOT_PATH = PROJECT_ROOT / "data" / "system" / "result_snapshot.json"
@@ -34,8 +35,12 @@ def write_result_snapshot(
     return result_path
 
 
-def _build_decision_from_inputs(inputs: RegimeInput) -> RegimeDecision:
+def _build_decision_from_inputs(
+    inputs: RegimeInput,
+    input_source: str = "unknown",
+) -> RegimeDecision:
     result = classify_regime(inputs)
+    vol_result = classify_volatility(inputs.volatility_score)
     decision = RegimeDecision(
         project="MarketRegimeBot",
         status="SAFE_DRY_RUN_REGIME",
@@ -44,6 +49,8 @@ def _build_decision_from_inputs(inputs: RegimeInput) -> RegimeDecision:
         risk_level=result.risk_level,
         safety=RegimeSafetyState(),
         reason=result.reason,
+        volatility_env=vol_result.volatility_env,
+        input_source=input_source,
     )
     decision.validate()
     return decision
@@ -53,26 +60,36 @@ def run_regime_cycle(
     write_snapshot: bool = True,
     inputs: RegimeInput | None = None,
     use_snapshot_inputs: bool = True,
+    use_market_data: bool = True,
+    _download_fn=None,
 ) -> dict[str, Any]:
     """Run one classification cycle.
 
     Input priority:
       1. Explicit ``inputs`` argument (tests / overrides).
-      2. Project snapshots via snapshot_adapter (if ``use_snapshot_inputs=True``).
-      3. DRY_RUN_INPUTS synthetic fallback.
+      2. Live yfinance market data (if ``use_market_data=True``).
+      3. Project snapshots via snapshot_adapter (if ``use_snapshot_inputs=True``).
+      4. DRY_RUN_INPUTS synthetic fallback.
 
     Never writes to sibling projects.
+    ``_download_fn`` is injected in tests to avoid live network calls.
     """
     if inputs is not None:
         effective_inputs = inputs
         input_source = "explicit"
+    elif use_market_data:
+        from core.market_data_reader import SOURCE_YFINANCE, read_market_regime_inputs
+        effective_inputs, input_source = read_market_regime_inputs(_download_fn=_download_fn)
+        if input_source != SOURCE_YFINANCE and use_snapshot_inputs:
+            # market data failed — try snapshot adapter
+            effective_inputs, input_source = load_regime_input_from_snapshots()
     elif use_snapshot_inputs:
         effective_inputs, input_source = load_regime_input_from_snapshots()
     else:
         effective_inputs = DRY_RUN_INPUTS
         input_source = "synthetic_fallback"
 
-    decision = _build_decision_from_inputs(effective_inputs)
+    decision = _build_decision_from_inputs(effective_inputs, input_source)
     output_path = None
     if write_snapshot:
         output_path = str(write_result_snapshot(decision))
@@ -83,7 +100,8 @@ def run_regime_cycle(
         "confidence": decision.confidence,
         "risk_level": decision.risk_level,
         "reason": list(decision.reason),
-        "result_snapshot_path": output_path,
+        "volatility_env": decision.volatility_env,
         "input_source": input_source,
+        "result_snapshot_path": output_path,
         "decision": decision.to_dict(),
     }

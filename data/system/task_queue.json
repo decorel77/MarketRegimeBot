@@ -3,7 +3,7 @@
     "id": "REGIME-PHASE-001",
     "title": "Skeleton + contracts + foundation",
     "phase": "PHASE_1",
-    "roadmap_phase_ref": "Phase 1 \u00e2\u20ac\u201d Project Foundation",
+    "roadmap_phase_ref": "Phase 1 â€” Project Foundation",
     "status": "DONE",
     "priority": "P0",
     "risk": "LOW",
@@ -26,7 +26,7 @@
     "id": "REGIME-AUTOCYCLE-ARCH-001",
     "title": "Autocycle architecture preparation",
     "phase": "PHASE_1",
-    "roadmap_phase_ref": "Phase 1 \u00e2\u20ac\u201d Project Foundation",
+    "roadmap_phase_ref": "Phase 1 â€” Project Foundation",
     "status": "DONE",
     "priority": "P0",
     "risk": "LOW",
@@ -51,7 +51,7 @@
     "id": "REGIME-PHASE-002A",
     "title": "Regime definitions documentation and naming alignment",
     "phase": "PHASE_2",
-    "roadmap_phase_ref": "Phase 2 \u00e2\u20ac\u201d Regime Definitions",
+    "roadmap_phase_ref": "Phase 2 â€” Regime Definitions",
     "status": "DONE",
     "priority": "P1",
     "risk": "LOW",
@@ -74,7 +74,7 @@
     "id": "REGIME-PHASE-002B",
     "title": "Read market index data read-only",
     "phase": "PHASE_2",
-    "roadmap_phase_ref": "Phase 4 \u00e2\u20ac\u201d Read-Only Market Analysis",
+    "roadmap_phase_ref": "Phase 4 â€” Read-Only Market Analysis",
     "status": "DONE",
     "priority": "P1",
     "risk": "LOW",
@@ -93,12 +93,12 @@
     "id": "REGIME-PHASE-003",
     "title": "Volatility regime detection",
     "phase": "PHASE_3",
-    "roadmap_phase_ref": "Phase 3 \u00e2\u20ac\u201d Regime Scoring Engine",
-    "status": "TODO",
+    "roadmap_phase_ref": "Phase 3 â€” Regime Scoring Engine",
+    "status": "DONE",
     "priority": "P1",
     "risk": "MEDIUM",
     "task_type": "analytics",
-    "summary": "Implement volatility regime detector using VIX or realized volatility metrics. Classify as HIGH_VOL, NORMAL, LOW_VOL. Pure analytics \u00e2\u20ac\u201d no broker, no execution.",
+    "summary": "Implement volatility regime detector using VIX or realized volatility metrics. Classify as HIGH_VOL, NORMAL, LOW_VOL. Pure analytics â€” no broker, no execution.",
     "dependencies": [
       "REGIME-PHASE-002B"
     ],
@@ -106,18 +106,25 @@
     "runtime_effect": false,
     "broker_execution": false,
     "live_trading_readiness": "not_applicable",
-    "autocycle_eligible": false
+    "autocycle_eligible": false,
+    "completed": "2026-06-09",
+    "deliverables": [
+      "core/volatility_classifier.py",
+      "tests/test_volatility_classifier.py",
+      "workflow/regime_cycle.py (Phase 3 wiring + volatility_env)",
+      "core/regime_contracts.py (volatility_env + input_source fields)"
+    ]
   },
   {
     "id": "REGIME-PHASE-004",
     "title": "Risk-on / risk-off classifier",
     "phase": "PHASE_4",
-    "roadmap_phase_ref": "Phase 3 \u00e2\u20ac\u201d Regime Scoring Engine",
+    "roadmap_phase_ref": "Phase 3 â€” Regime Scoring Engine",
     "status": "TODO",
     "priority": "P1",
     "risk": "MEDIUM",
     "task_type": "analytics",
-    "summary": "Implement risk-on/risk-off composite classifier using market breadth, credit spreads, and volatility signals. Advisory output only \u00e2\u20ac\u201d no execution.",
+    "summary": "Implement risk-on/risk-off composite classifier using market breadth, credit spreads, and volatility signals. Advisory output only â€” no execution.",
     "dependencies": [
       "REGIME-PHASE-003"
     ],
@@ -131,7 +138,7 @@
     "id": "REGIME-PHASE-005",
     "title": "AllocationBot snapshot integration",
     "phase": "PHASE_5",
-    "roadmap_phase_ref": "Phase 5 \u00e2\u20ac\u201d AllocationBot Integration",
+    "roadmap_phase_ref": "Phase 5 â€” AllocationBot Integration",
     "status": "TODO",
     "priority": "P2",
     "risk": "MEDIUM",
@@ -150,7 +157,7 @@
     "id": "REGIME-PHASE-006",
     "title": "Human approval / dashboard output",
     "phase": "PHASE_6",
-    "roadmap_phase_ref": "Phase 6 \u00e2\u20ac\u201d Dashboard and Reporting",
+    "roadmap_phase_ref": "Phase 6 â€” Dashboard and Reporting",
     "status": "TODO",
     "priority": "P2",
     "risk": "MEDIUM",
@@ -173,7 +180,7 @@
     "priority": "P1",
     "risk": "LOW",
     "task_type": "analytics",
-    "summary": "Produce a 0\u00e2\u20ac\u201c100 confidence score alongside each regime classification. Score reflects signal agreement, data quality, and historical accuracy. Advisory output only.",
+    "summary": "Produce a 0â€“100 confidence score alongside each regime classification. Score reflects signal agreement, data quality, and historical accuracy. Advisory output only.",
     "dependencies": [
       "REGIME-PHASE-003"
     ],
@@ -207,7 +214,7 @@
     "priority": "P2",
     "risk": "LOW",
     "task_type": "analytics",
-    "summary": "Detect when regime changes from one state to another. Record transition timestamp, from_regime, to_regime, and confidence delta. Advisory report entry only \u00e2\u20ac\u201d no execution triggered.",
+    "summary": "Detect when regime changes from one state to another. Record transition timestamp, from_regime, to_regime, and confidence delta. Advisory report entry only â€” no execution triggered.",
     "dependencies": [
       "REGIME-HISTORY-001"
     ],
@@ -241,7 +248,7 @@
     "priority": "P2",
     "risk": "LOW",
     "task_type": "integration",
-    "summary": "Define and document the JSON schema for regime export files that NovaTacticBot can ingest. Align with TacticalEvent contract. No implementation \u00e2\u20ac\u201d schema specification and documentation only.",
+    "summary": "Define and document the JSON schema for regime export files that NovaTacticBot can ingest. Align with TacticalEvent contract. No implementation â€” schema specification and documentation only.",
     "dependencies": [
       "REGIME-PHASE-005"
     ],
