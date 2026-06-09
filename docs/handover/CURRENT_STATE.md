@@ -1,8 +1,8 @@
 # Current State
 
-## MarketRegimeBot — Regime Definitions Complete — 2026-06-07
+## MarketRegimeBot — Phase 2B Market Data Reader — 2026-06-09
 
-Status: PHASE_2_DOCS_SCHEMA_COMPLETE / SAFE_PLANNING_ONLY
+Status: PHASE_2B_MARKET_DATA_READER_COMPLETE / ADVISORY_ONLY
 
 MarketRegimeBot is a standalone NOVA ecosystem service for future market regime
 detection. All current work is documentation, schema, and planning only.
@@ -24,6 +24,7 @@ detection. All current work is documentation, schema, and planning only.
 | Autocycle tests | `tests/test_autocycle_policy.py` | 41 unit tests |
 | Autocycle dev prompt | `docs/architecture/sequential_autocycle_dev_prompt.md` | Reusable autocycle prompt template |
 | Skeleton core | `core/` | Inert regime classifier returning UNKNOWN |
+| **Market data reader** | `core/market_data_reader.py` | **NEW** yfinance reader for SPY/QQQ/VIX → RegimeInput. Fails closed. ADVISORY_ONLY. (REGIME-PHASE-002B / MASTER-012) |
 | Result snapshot | `data/system/result_snapshot.json` | Dry-run output artifact |
 
 ---

@@ -75,7 +75,7 @@
     "title": "Read market index data read-only",
     "phase": "PHASE_2",
     "roadmap_phase_ref": "Phase 4 \u00e2\u20ac\u201d Read-Only Market Analysis",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "P1",
     "risk": "LOW",
     "task_type": "data_reading",
