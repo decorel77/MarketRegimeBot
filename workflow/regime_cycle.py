@@ -12,12 +12,22 @@ from core.regime_contracts import (
     RegimeSafetyState,
     build_unknown_regime_decision,
 )
+from core.market_data_reader import SOURCE_YFINANCE
 from core.snapshot_adapter import load_regime_input_from_snapshots
 from core.volatility_classifier import classify_volatility
 from utils.regime_export_writer import write_regime_export
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_SNAPSHOT_PATH = PROJECT_ROOT / "data" / "system" / "result_snapshot.json"
+
+
+def is_real_market_data(input_source: str) -> bool:
+    """Realness rule (REPAIR-005): a regime decision is only ``data_is_real`` when
+    it was derived from live market data (yfinance). Every other source —
+    ``explicit`` test inputs, ``synthetic_fallback``, ``yfinance_error``, or a
+    sibling-snapshot derivation — is fixture/unverified and must be rejected by
+    consumers (AllocationBot, TacticBot)."""
+    return input_source == SOURCE_YFINANCE
 
 
 def write_result_snapshot(
@@ -39,9 +49,11 @@ def write_result_snapshot(
 def _build_decision_from_inputs(
     inputs: RegimeInput,
     input_source: str = "unknown",
+    data_is_real: bool | None = None,
 ) -> RegimeDecision:
     result = classify_regime(inputs)
     vol_result = classify_volatility(inputs.volatility_score)
+    real = is_real_market_data(input_source) if data_is_real is None else data_is_real
     decision = RegimeDecision(
         project="MarketRegimeBot",
         status="SAFE_DRY_RUN_REGIME",
@@ -52,6 +64,7 @@ def _build_decision_from_inputs(
         reason=result.reason,
         volatility_env=vol_result.volatility_env,
         input_source=input_source,
+        data_is_real=real,
     )
     decision.validate()
     return decision
@@ -108,6 +121,7 @@ def run_regime_cycle(
         "reason": list(decision.reason),
         "volatility_env": decision.volatility_env,
         "input_source": input_source,
+        "data_is_real": decision.data_is_real,
         "result_snapshot_path": output_path,
         "regime_export_path": export_path,
         "decision": decision.to_dict(),

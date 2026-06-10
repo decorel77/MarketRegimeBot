@@ -1,15 +1,16 @@
 {
-  "confidence": 80,
+  "confidence": 71,
+  "data_is_real": true,
   "dry_run": true,
-  "generated_at": "2026-06-09T20:19:18.378578+00:00",
-  "input_source": "explicit",
-  "market_regime": "BULL",
+  "generated_at": "2026-06-10T09:02:13.815927+00:00",
+  "input_source": "yfinance",
+  "market_regime": "SIDEWAYS",
   "project": "MarketRegimeBot",
   "read_only": true,
   "reason": [
-    "Strong positive trend score 0.80"
+    "Trend score 0.04 and volatility score 0.24 indicate range-bound conditions"
   ],
-  "risk_level": "NORMAL",
+  "risk_level": "LOW",
   "runtime_enabled": false,
   "schema_version": "regime_export.v1",
   "volatility_env": "LOW_VOL"

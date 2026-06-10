@@ -65,6 +65,10 @@ class RegimeDecision:
     reason: tuple[str, ...] = ()
     volatility_env: str = "UNKNOWN"
     input_source: str = "unknown"
+    # Realness flag (REPAIR-005 / canonical schema): True only when the decision
+    # is derived from live market data (yfinance). Fixture/synthetic/snapshot-
+    # derived inputs leave this False so downstream consumers reject the output.
+    data_is_real: bool = False
 
     def validate(self) -> None:
         self.safety.validate()
@@ -78,6 +82,8 @@ class RegimeDecision:
             raise RegimeValidationError("Confidence must be between 0 and 100.")
         if self.volatility_env not in VALID_VOL_ENVS:
             raise RegimeValidationError(f"Unknown volatility_env: {self.volatility_env}")
+        if not isinstance(self.data_is_real, bool):
+            raise RegimeValidationError("data_is_real must be a boolean.")
 
     @property
     def dry_run(self) -> bool:

@@ -36,6 +36,7 @@ C:\NovaGPT\Apps\MarketRegimeBot\data\system\regime_export.json
   "risk_level": "<LOW | NORMAL | MEDIUM | HIGH | UNKNOWN>",
   "volatility_env": "<LOW_VOL | NORMAL | HIGH_VOL | UNKNOWN>",
   "input_source": "<yfinance | snapshot_adapter | synthetic_fallback | explicit | unknown>",
+  "data_is_real": "<bool>",
   "reason": ["<string>", "..."],
   "dry_run": true,
   "read_only": true,
@@ -56,7 +57,8 @@ C:\NovaGPT\Apps\MarketRegimeBot\data\system\regime_export.json
 | `confidence` | integer 0–100 | Classifier confidence in `market_regime` |
 | `risk_level` | string | Risk assessment: LOW / NORMAL / MEDIUM / HIGH / UNKNOWN |
 | `volatility_env` | string | Volatility environment: LOW_VOL / NORMAL / HIGH_VOL / UNKNOWN |
-| `input_source` | string | Data source used for this classification |
+| `input_source` | string | Data source used for this classification (truthful: `yfinance` only when live market data was read) |
+| `data_is_real` | bool | Realness flag (REPAIR-005). `true` **only** when derived from live market data (`input_source == "yfinance"`). Fixture/synthetic/snapshot-derived classifications are `false` so consumers (AllocationBot, TacticBot) must reject them. Matches the REPAIR-003 canonical `data_is_real` contract. |
 | `reason` | string[] | Human-readable explanation of the classification decision |
 | `dry_run` | bool | Always `true` — MarketRegimeBot never executes live |
 | `read_only` | bool | Always `true` — this file is written by MarketRegimeBot only |
