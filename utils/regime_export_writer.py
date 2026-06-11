@@ -72,7 +72,7 @@ def build_regime_export(
 
 def write_regime_export(
     decision: RegimeDecision,
-    export_path: Path = REGIME_EXPORT_PATH,
+    export_path: Path | None = None,
     *,
     generated_at: str | None = None,
 ) -> Path:
@@ -81,6 +81,10 @@ def write_regime_export(
     Only writes inside MarketRegimeBot project root.
     Returns the path written.
     """
+    # Late-bound default (QA-003): resolved at call time so the test suite can
+    # sandbox REGIME_EXPORT_PATH instead of writing production artifacts.
+    if export_path is None:
+        export_path = REGIME_EXPORT_PATH
     resolved = export_path.resolve()
     project_root = PROJECT_ROOT.resolve()
     if project_root not in resolved.parents and resolved != project_root:

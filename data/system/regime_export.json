@@ -1,14 +1,14 @@
 {
-  "confidence": 71,
+  "confidence": 58,
   "data_is_real": true,
   "dry_run": true,
-  "generated_at": "2026-06-10T09:02:13.815927+00:00",
+  "generated_at": "2026-06-11T11:04:32.889899+00:00",
   "input_source": "yfinance",
   "market_regime": "SIDEWAYS",
   "project": "MarketRegimeBot",
   "read_only": true,
   "reason": [
-    "Trend score 0.04 and volatility score 0.24 indicate range-bound conditions"
+    "Trend score -0.18 and volatility score 0.23 indicate range-bound conditions"
   ],
   "risk_level": "LOW",
   "runtime_enabled": false,

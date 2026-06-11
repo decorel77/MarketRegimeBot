@@ -46,10 +46,14 @@ def is_trusted_input_source(input_source: str) -> bool:
 
 def write_result_snapshot(
     decision: RegimeDecision,
-    result_path: Path = RESULT_SNAPSHOT_PATH,
+    result_path: Path | None = None,
     *,
     produced_at: str | None = None,
 ) -> Path:
+    # Late-bound default (QA-003): resolved at call time so the test suite can
+    # sandbox RESULT_SNAPSHOT_PATH instead of writing production artifacts.
+    if result_path is None:
+        result_path = RESULT_SNAPSHOT_PATH
     resolved_path = result_path.resolve()
     project_root = PROJECT_ROOT.resolve()
     if project_root not in resolved_path.parents and resolved_path != project_root:
