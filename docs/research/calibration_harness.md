@@ -61,6 +61,8 @@ From the MarketRegimeBot repo root, using the repo-local venv only:
 #   --test-size N         out-of-sample bars per fold (default 20)
 #   --model v1|v2         model to evaluate (default v1 = production; v2 is the
 #                         QA-012 research model, see docs/regime_model_v2.md)
+#   --hysteresis          apply the QA-013 dwell-time filter (default config,
+#                         default off; see docs/regime_hysteresis.md)
 ```
 
 Model selection (QA-012): `--model v1` (default) replays the production

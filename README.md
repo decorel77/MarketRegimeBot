@@ -58,3 +58,7 @@ See `docs/research/calibration_harness.md`.
 A research-stage multi-factor Regime Model v2 (QA-012) can be evaluated with
 `--model v2`; production keeps using v1. See `docs/regime_model_v2.md`.
 
+A research-stage hysteresis/dwell-time filter (QA-013) can be applied with
+`--hysteresis` to reduce regime flip-flopping; default off. See
+`docs/regime_hysteresis.md`.
+

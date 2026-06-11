@@ -50,6 +50,7 @@ from core.regime_classifier import (
     RegimeInput,
     classify_regime,
 )
+from core.regime_hysteresis import HysteresisConfig, RegimeHysteresisFilter
 from core.regime_model_v2 import (
     classify_regime_v2,
     composite_score,
@@ -277,6 +278,53 @@ def run_rolling_classification(
     return records
 
 
+# --- Hysteresis post-processing (QA-013, optional) ------------------------------------
+
+
+def _check_hysteresis_config(
+    hysteresis_config: HysteresisConfig | None,
+) -> HysteresisConfig | None:
+    if hysteresis_config is not None and not isinstance(
+        hysteresis_config, HysteresisConfig
+    ):
+        raise CalibrationDataError(
+            "hysteresis_config must be a HysteresisConfig or None, got "
+            f"{type(hysteresis_config).__name__}"
+        )
+    return hysteresis_config
+
+
+def apply_hysteresis_to_records(
+    records: list[dict[str, Any]],
+    hysteresis_config: HysteresisConfig | None = None,
+) -> list[dict[str, Any]]:
+    """Replay classified records through the QA-013 hysteresis filter.
+
+    Returns new records whose ``market_regime`` / ``confidence`` are the
+    published (smoothed) values; the raw decision and filter state are kept
+    under a ``hysteresis`` object per record. The filter starts at UNKNOWN,
+    so the first record(s) are a warm-up until one observation qualifies."""
+    regime_filter = RegimeHysteresisFilter(hysteresis_config)
+    smoothed: list[dict[str, Any]] = []
+    for record in records:
+        decision = regime_filter.observe(
+            record["market_regime"], record["confidence"]
+        )
+        published = dict(record)
+        published["market_regime"] = decision["published_regime"]
+        published["confidence"] = decision["published_confidence"]
+        published["hysteresis"] = {
+            "raw_regime": decision["raw_regime"],
+            "raw_confidence": decision["raw_confidence"],
+            "pending_regime": decision["pending_regime"],
+            "pending_count": decision["pending_count"],
+            "switched": decision["switched"],
+            "fail_closed": decision["fail_closed"],
+        }
+        smoothed.append(published)
+    return smoothed
+
+
 # --- Calibration summary ------------------------------------------------------------
 
 
@@ -438,13 +486,20 @@ def run_walk_forward(
     test_size: int = 20,
     forward_horizon: int = 5,
     model_version: str = "v1",
+    hysteresis_config: HysteresisConfig | None = None,
 ) -> dict[str, Any]:
     """Walk-forward evaluation: sequential, non-overlapping out-of-sample test
     windows of ``test_size`` bars, each preceded by ``train_size`` bars of
     burn-in/lookback context. Neither classifier has fitted parameters, so the
     train window provides lookback history only — every test window is scored
-    out-of-sample with unmodified model behavior."""
+    out-of-sample with unmodified model behavior. When ``hysteresis_config``
+    is given (QA-013), the filter is replayed over the full record stream
+    before fold slicing, mirroring how a live sequential consumer would see
+    it."""
+    hysteresis_config = _check_hysteresis_config(hysteresis_config)
     records = run_rolling_classification(history, model_version=model_version)
+    if hysteresis_config is not None:
+        records = apply_hysteresis_to_records(records, hysteresis_config)
     return _walk_forward_from_records(
         records,
         history,
@@ -466,6 +521,7 @@ def build_calibration_report(
     test_size: int = 20,
     generated_at: str | None = None,
     model_version: str = "v1",
+    hysteresis_config: HysteresisConfig | None = None,
 ) -> dict[str, Any]:
     """Build the full research-only calibration report.
 
@@ -474,9 +530,17 @@ def build_calibration_report(
     input history and parameters. ``model_version="v1"`` (default) keeps the
     QA-014 ``calibration_report.v1`` schema; ``"v2"`` evaluates the QA-012
     multi-factor model under ``calibration_report.v2`` (records gain a
-    ``factors`` object, parameters gain the v2 thresholds)."""
+    ``factors`` object, parameters gain the v2 thresholds).
+
+    ``hysteresis_config`` (QA-013, default off) replays the records through
+    the dwell-time filter before summarizing: records gain a ``hysteresis``
+    object and parameters gain the filter configuration. Default reports are
+    unaffected."""
     history.validate()
+    hysteresis_config = _check_hysteresis_config(hysteresis_config)
     records = run_rolling_classification(history, model_version=model_version)
+    if hysteresis_config is not None:
+        records = apply_hysteresis_to_records(records, hysteresis_config)
     calibration = summarize_records(records, history, forward_horizon=forward_horizon)
     walk_forward = _walk_forward_from_records(
         records,
@@ -502,6 +566,8 @@ def build_calibration_report(
     }
     if model_version == "v2":
         parameters.update(v2_parameters())
+    if hysteresis_config is not None:
+        parameters["hysteresis"] = hysteresis_config.to_dict()
     return {
         "schema_version": (
             REPORT_SCHEMA_VERSION if model_version == "v1" else REPORT_SCHEMA_VERSION_V2

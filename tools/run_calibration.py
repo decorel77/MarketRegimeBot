@@ -11,6 +11,7 @@ import json
 import sys
 from pathlib import Path
 
+from core.regime_hysteresis import HysteresisConfig
 from research.calibration_harness import (
     CalibrationDataError,
     CalibrationWriteGuardError,
@@ -45,6 +46,14 @@ def build_parser() -> argparse.ArgumentParser:
         default="v1",
         help="Regime model to evaluate: v1 (production, default) or v2 (QA-012 research model).",
     )
+    parser.add_argument(
+        "--hysteresis",
+        action="store_true",
+        help=(
+            "Apply the QA-013 dwell-time hysteresis filter (default config) "
+            "to the classified records before summarizing. Default: off."
+        ),
+    )
     return parser
 
 
@@ -64,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
             train_size=args.train_size,
             test_size=args.test_size,
             model_version=args.model,
+            hysteresis_config=HysteresisConfig() if args.hysteresis else None,
         )
         if args.out:
             written = write_calibration_report(report, Path(args.out))
@@ -73,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
                         "written_to": str(written),
                         "schema_version": report["schema_version"],
                         "model_version": args.model,
+                        "hysteresis": args.hysteresis,
                         "research_only": True,
                         "records_classified": report["calibration"]["records_classified"],
                         "fold_count": report["walk_forward"]["fold_count"],
