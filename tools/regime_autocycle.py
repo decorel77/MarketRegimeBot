@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 
+from utils.guardrails import run_all_checks
 from workflow.regime_cycle import run_regime_cycle
 
 
@@ -21,6 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    run_all_checks()
     parser = build_parser()
     args = parser.parse_args(argv)
     if not args.once:
@@ -42,4 +44,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
