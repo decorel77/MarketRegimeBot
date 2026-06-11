@@ -31,6 +31,19 @@ def is_real_market_data(input_source: str) -> bool:
     return input_source == SOURCE_YFINANCE
 
 
+SOURCE_EXPLICIT = "explicit"
+
+
+def is_trusted_input_source(input_source: str) -> bool:
+    """Fail-closed rule (QA-002): only live market data (yfinance) and
+    explicitly injected test inputs may be classified into a regime. Every
+    fallback source — ``synthetic_fallback``, ``yfinance_error``, sibling-
+    snapshot derivations, ``unknown`` — is published as UNKNOWN/confidence 0,
+    so a plausible-but-fake regime can never steer a consumer that forgets to
+    check ``data_is_real``."""
+    return input_source == SOURCE_EXPLICIT or is_real_market_data(input_source)
+
+
 def write_result_snapshot(
     decision: RegimeDecision,
     result_path: Path = RESULT_SNAPSHOT_PATH,
@@ -50,11 +63,37 @@ def write_result_snapshot(
     return result_path
 
 
+def _build_fallback_unknown_decision(
+    inputs: RegimeInput,
+    input_source: str,
+) -> RegimeDecision:
+    """Build the QA-002 fail-closed decision for an untrusted input source.
+
+    The raw scores are preserved under ``fallback_inputs`` for diagnostics
+    only — they never reach the classifier, so no plausible fake regime can
+    be published."""
+    return build_unknown_regime_decision(
+        input_source=input_source,
+        reason=(
+            f"Fail closed (QA-002): input source '{input_source}' is not live "
+            "market data or explicit test injection; regime forced to UNKNOWN.",
+        ),
+        fallback_inputs={
+            "trend_score": inputs.trend_score,
+            "volatility_score": inputs.volatility_score,
+            "synthetic_dry_run_inputs": inputs == DRY_RUN_INPUTS,
+        },
+    )
+
+
 def _build_decision_from_inputs(
     inputs: RegimeInput,
     input_source: str = "unknown",
     data_is_real: bool | None = None,
 ) -> RegimeDecision:
+    # QA-002 single choke point: untrusted sources can never be classified.
+    if not is_trusted_input_source(input_source):
+        return _build_fallback_unknown_decision(inputs, input_source)
     result = classify_regime(inputs)
     vol_result = classify_volatility(inputs.volatility_score)
     real = is_real_market_data(input_source) if data_is_real is None else data_is_real
@@ -90,6 +129,10 @@ def run_regime_cycle(
       2. Live yfinance market data (if ``use_market_data=True``).
       3. Project snapshots via snapshot_adapter (if ``use_snapshot_inputs=True``).
       4. DRY_RUN_INPUTS synthetic fallback.
+
+    Fail-closed publishing (QA-002): only sources 1 (explicit test injection)
+    and 2 (yfinance) are classified into a regime. Sources 3 and 4 publish
+    UNKNOWN/confidence 0 with the raw scores kept under ``fallback_inputs``.
 
     Never writes to sibling projects.
     ``_download_fn`` is injected in tests to avoid live network calls.

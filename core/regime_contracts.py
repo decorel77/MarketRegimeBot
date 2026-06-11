@@ -109,6 +109,10 @@ class RegimeDecision:
     # is derived from live market data (yfinance). Fixture/synthetic/snapshot-
     # derived inputs leave this False so downstream consumers reject the output.
     data_is_real: bool = False
+    # Diagnostic only (QA-002): when a fallback source is forced to UNKNOWN,
+    # the raw scores it would have classified are preserved here so the
+    # plausible-but-fake value can never appear as the published regime.
+    fallback_inputs: dict[str, Any] | None = None
 
     def validate(self) -> None:
         self.safety.validate()
@@ -124,6 +128,10 @@ class RegimeDecision:
             raise RegimeValidationError(f"Unknown volatility_env: {self.volatility_env}")
         if not isinstance(self.data_is_real, bool):
             raise RegimeValidationError("data_is_real must be a boolean.")
+        if self.fallback_inputs is not None and not isinstance(
+            self.fallback_inputs, dict
+        ):
+            raise RegimeValidationError("fallback_inputs must be a dict or None.")
 
     @property
     def dry_run(self) -> bool:
@@ -139,7 +147,11 @@ class RegimeDecision:
         return payload
 
 
-def build_unknown_regime_decision() -> RegimeDecision:
+def build_unknown_regime_decision(
+    input_source: str = "unknown",
+    reason: tuple[str, ...] = (),
+    fallback_inputs: dict[str, Any] | None = None,
+) -> RegimeDecision:
     decision = RegimeDecision(
         project="MarketRegimeBot",
         status="SAFE_DRY_RUN_REGIME",
@@ -147,6 +159,9 @@ def build_unknown_regime_decision() -> RegimeDecision:
         confidence=0,
         risk_level="UNKNOWN",
         safety=RegimeSafetyState(),
+        reason=reason,
+        input_source=input_source,
+        fallback_inputs=fallback_inputs,
     )
     decision.validate()
     return decision

@@ -53,15 +53,19 @@ class SnapshotGenerationTests(unittest.TestCase):
         )
         self.assertIsInstance(payload["reason"], list)
 
-    def test_default_synthetic_inputs_produce_bull(self):
-        # DRY_RUN_INPUTS = trend=0.8, vol=0.2 → BULL (synthetic fallback path)
+    def test_default_synthetic_inputs_fail_closed_to_unknown(self):
+        # QA-002: DRY_RUN_INPUTS (trend=0.8, vol=0.2) would classify as BULL,
+        # but a synthetic fallback source must never publish a plausible fake
+        # regime — it fails closed to UNKNOWN/confidence 0.
         result = regime_cycle.run_regime_cycle(
             write_snapshot=False,
+            write_export=False,
             use_market_data=False,
             use_snapshot_inputs=False,
         )
-        self.assertEqual(result["regime"], "BULL")
-        self.assertEqual(result["confidence"], 80)
+        self.assertEqual(result["regime"], "UNKNOWN")
+        self.assertEqual(result["confidence"], 0)
+        self.assertFalse(result["data_is_real"])
 
     def test_custom_bear_inputs(self):
         result = regime_cycle.run_regime_cycle(
