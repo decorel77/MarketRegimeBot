@@ -7,3 +7,8 @@ logs/
 temp/
 .env
 
+# Nova security: local secrets and generated junk — DO NOT COMMIT
+venv/
+.env.*
+*key*.json
+
