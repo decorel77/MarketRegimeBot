@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,8 @@ def is_real_market_data(input_source: str) -> bool:
 def write_result_snapshot(
     decision: RegimeDecision,
     result_path: Path = RESULT_SNAPSHOT_PATH,
+    *,
+    produced_at: str | None = None,
 ) -> Path:
     resolved_path = result_path.resolve()
     project_root = PROJECT_ROOT.resolve()
@@ -40,7 +43,8 @@ def write_result_snapshot(
         raise ValueError("Refusing to write outside MarketRegimeBot project root.")
     result_path.parent.mkdir(parents=True, exist_ok=True)
     result_path.write_text(
-        json.dumps(decision.to_dict(), indent=2, sort_keys=True) + "\n",
+        json.dumps(decision.to_dict(produced_at=produced_at), indent=2, sort_keys=True)
+        + "\n",
         encoding="utf-8",
     )
     return result_path
@@ -77,6 +81,7 @@ def run_regime_cycle(
     use_market_data: bool = True,
     write_export: bool = True,
     _download_fn=None,
+    produced_at: str | None = None,
 ) -> dict[str, Any]:
     """Run one classification cycle.
 
@@ -89,6 +94,9 @@ def run_regime_cycle(
     Never writes to sibling projects.
     ``_download_fn`` is injected in tests to avoid live network calls.
     ``write_export`` controls whether regime_export.json is written.
+    ``produced_at`` (QA-001) is an injectable ISO-8601 UTC timestamp for the
+    snapshot freshness envelope; defaults to the current UTC time and is used
+    consistently for both the written snapshot and the returned decision dict.
     """
     if inputs is not None:
         effective_inputs = inputs
@@ -106,9 +114,16 @@ def run_regime_cycle(
         input_source = "synthetic_fallback"
 
     decision = _build_decision_from_inputs(effective_inputs, input_source)
+    effective_produced_at = (
+        produced_at
+        if produced_at is not None
+        else datetime.now(timezone.utc).isoformat()
+    )
     output_path = None
     if write_snapshot:
-        output_path = str(write_result_snapshot(decision))
+        output_path = str(
+            write_result_snapshot(decision, produced_at=effective_produced_at)
+        )
     export_path = None
     if write_export:
         export_path = str(write_regime_export(decision))
@@ -124,5 +139,5 @@ def run_regime_cycle(
         "data_is_real": decision.data_is_real,
         "result_snapshot_path": output_path,
         "regime_export_path": export_path,
-        "decision": decision.to_dict(),
+        "decision": decision.to_dict(produced_at=effective_produced_at),
     }

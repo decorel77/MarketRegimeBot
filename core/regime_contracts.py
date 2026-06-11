@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any
+
+
+# QA-001 result snapshot envelope: every serialized RegimeDecision carries a
+# freshness envelope so consumers (NovaBridge, NovaAllocationBot) can gate on
+# snapshot age instead of trusting a once-real regime forever.
+RESULT_SCHEMA_VERSION = "regime_result.v2"
+PRODUCER_ID = "MarketRegimeBot"
+FRESHNESS_WINDOW = timedelta(hours=24)
 
 
 VALID_REGIMES = {
@@ -21,6 +30,37 @@ VALID_RISK_LEVELS = {"UNKNOWN", "LOW", "NORMAL", "MEDIUM", "HIGH"}
 
 class RegimeValidationError(ValueError):
     """Raised when a regime result violates safety or contract rules."""
+
+
+def _parse_produced_at(produced_at: str) -> datetime:
+    """Parse an injected ISO-8601 timestamp; naive values are assumed UTC."""
+    try:
+        parsed = datetime.fromisoformat(produced_at.replace("Z", "+00:00"))
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise RegimeValidationError(
+            f"produced_at must be an ISO-8601 timestamp, got: {produced_at!r}"
+        ) from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def build_snapshot_envelope(produced_at: str | None = None) -> dict[str, str]:
+    """Build the QA-001 freshness envelope for result snapshot serialization.
+
+    ``produced_at`` is injectable (tests, deterministic cycles); defaults to
+    the current UTC time. ``fresh_until`` is ``produced_at`` + 24h.
+    """
+    if produced_at is None:
+        produced = datetime.now(timezone.utc)
+    else:
+        produced = _parse_produced_at(produced_at)
+    return {
+        "produced_at": produced.isoformat(),
+        "fresh_until": (produced + FRESHNESS_WINDOW).isoformat(),
+        "schema_version": RESULT_SCHEMA_VERSION,
+        "producer_id": PRODUCER_ID,
+    }
 
 
 @dataclass(frozen=True)
@@ -89,12 +129,13 @@ class RegimeDecision:
     def dry_run(self) -> bool:
         return self.safety.dry_run
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *, produced_at: str | None = None) -> dict[str, Any]:
         self.validate()
         payload = asdict(self)
         safety = payload.pop("safety")
         payload.update(safety)
         payload["reason"] = list(payload.get("reason", []))
+        payload.update(build_snapshot_envelope(produced_at))
         return payload
 
 
