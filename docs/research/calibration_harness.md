@@ -59,7 +59,16 @@ From the MarketRegimeBot repo root, using the repo-local venv only:
 #   --forward-horizon N   sessions ahead for forward-return alignment (default 5)
 #   --train-size N        burn-in/lookback bars per fold (default 40, min 20)
 #   --test-size N         out-of-sample bars per fold (default 20)
+#   --model v1|v2         model to evaluate (default v1 = production; v2 is the
+#                         QA-012 research model, see docs/regime_model_v2.md)
 ```
+
+Model selection (QA-012): `--model v1` (default) replays the production
+classifier and emits the stable `calibration_report.v1` schema. `--model v2`
+evaluates the research-stage multi-factor model under
+`calibration_report.v2` — identical top-level shape, but each record gains a
+`factors` object (`drawdown_score`, `ma_gap_score`, `momentum_score`,
+`composite_score`) and `parameters` gains the v2 thresholds.
 
 Tests:
 

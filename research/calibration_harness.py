@@ -50,6 +50,12 @@ from core.regime_classifier import (
     RegimeInput,
     classify_regime,
 )
+from core.regime_model_v2 import (
+    classify_regime_v2,
+    composite_score,
+    compute_v2_inputs,
+)
+from core.regime_model_v2 import parameters as v2_parameters
 from core.volatility_classifier import classify_volatility
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -58,7 +64,12 @@ PRODUCTION_SYSTEM_DIR = PROJECT_ROOT / "data" / "system"
 RESEARCH_OUTPUT_DIR = PROJECT_ROOT / "data" / "research"
 
 REPORT_SCHEMA_VERSION = "calibration_report.v1"
+# v2-model reports carry their own schema version because their records hold
+# an extra "factors" object; v1 reports stay byte-stable on schema v1 (QA-014).
+REPORT_SCHEMA_VERSION_V2 = "calibration_report.v2"
 PRODUCER = "MarketRegimeBot.research.calibration_harness"
+
+MODEL_VERSIONS = ("v1", "v2")
 
 REQUIRED_COLUMNS = ("date", "spy_close", "qqq_close", "vix_close")
 MIN_BARS = _RETURN_WINDOW + 1  # one full production return window
@@ -204,44 +215,65 @@ def load_history_json(path: Path | str) -> History:
 # --- Rolling classification ---------------------------------------------------------
 
 
-def run_rolling_classification(history: History) -> list[dict[str, Any]]:
+def run_rolling_classification(
+    history: History, *, model_version: str = "v1"
+) -> list[dict[str, Any]]:
     """Classify every bar that has a full production lookback window behind it.
 
     Each bar ``i >= _RETURN_WINDOW`` is scored from the trailing
     ``_RETURN_WINDOW + 1`` closes — exactly the window the production reader
-    uses — then classified with the production regime and volatility
-    classifiers.
+    uses — then classified with the selected model. ``model_version="v1"``
+    (default) replays the production classifier; ``"v2"`` evaluates the
+    research-stage multi-factor model (QA-012) and adds a ``factors`` object
+    to each record.
     """
+    if model_version not in MODEL_VERSIONS:
+        raise CalibrationDataError(
+            f"unknown model_version {model_version!r}; expected one of {MODEL_VERSIONS}"
+        )
     history.validate()
     records: list[dict[str, Any]] = []
     for i in range(_RETURN_WINDOW, len(history.dates)):
         start = i - _RETURN_WINDOW
-        trend_score = _compute_trend_score(
-            {
-                "SPY": list(history.spy_close[start : i + 1]),
-                "QQQ": list(history.qqq_close[start : i + 1]),
+        spy_window = list(history.spy_close[start : i + 1])
+        qqq_window = list(history.qqq_close[start : i + 1])
+        if model_version == "v1":
+            trend_score = _compute_trend_score({"SPY": spy_window, "QQQ": qqq_window})
+            if trend_score is None:
+                raise CalibrationDataError(f"could not compute trend score at bar {i}")
+            volatility_score = _compute_volatility_score(history.vix_close[i])
+            inputs = RegimeInput(
+                trend_score=trend_score, volatility_score=volatility_score
+            )
+            result = classify_regime(inputs)
+            factors = None
+        else:
+            v2_inputs = compute_v2_inputs(spy_window, qqq_window, history.vix_close[i])
+            if v2_inputs is None:
+                raise CalibrationDataError(f"could not compute v2 factors at bar {i}")
+            trend_score = v2_inputs.trend_score
+            volatility_score = v2_inputs.volatility_score
+            result = classify_regime_v2(v2_inputs)
+            factors = {
+                "drawdown_score": v2_inputs.drawdown_score,
+                "ma_gap_score": v2_inputs.ma_gap_score,
+                "momentum_score": v2_inputs.momentum_score,
+                "composite_score": composite_score(v2_inputs),
             }
-        )
-        if trend_score is None:
-            raise CalibrationDataError(f"could not compute trend score at bar {i}")
-        volatility_score = _compute_volatility_score(history.vix_close[i])
-        inputs = RegimeInput(
-            trend_score=trend_score, volatility_score=volatility_score
-        )
-        result = classify_regime(inputs)
         vol_result = classify_volatility(volatility_score)
-        records.append(
-            {
-                "bar_index": i,
-                "date": history.dates[i],
-                "trend_score": trend_score,
-                "volatility_score": volatility_score,
-                "market_regime": result.market_regime,
-                "confidence": result.confidence,
-                "risk_level": result.risk_level,
-                "volatility_env": vol_result.volatility_env,
-            }
-        )
+        record = {
+            "bar_index": i,
+            "date": history.dates[i],
+            "trend_score": trend_score,
+            "volatility_score": volatility_score,
+            "market_regime": result.market_regime,
+            "confidence": result.confidence,
+            "risk_level": result.risk_level,
+            "volatility_env": vol_result.volatility_env,
+        }
+        if factors is not None:
+            record["factors"] = factors
+        records.append(record)
     return records
 
 
@@ -405,13 +437,14 @@ def run_walk_forward(
     train_size: int = 40,
     test_size: int = 20,
     forward_horizon: int = 5,
+    model_version: str = "v1",
 ) -> dict[str, Any]:
     """Walk-forward evaluation: sequential, non-overlapping out-of-sample test
     windows of ``test_size`` bars, each preceded by ``train_size`` bars of
-    burn-in/lookback context. The classifier has no fitted parameters, so the
+    burn-in/lookback context. Neither classifier has fitted parameters, so the
     train window provides lookback history only — every test window is scored
-    out-of-sample with unmodified production behavior."""
-    records = run_rolling_classification(history)
+    out-of-sample with unmodified model behavior."""
+    records = run_rolling_classification(history, model_version=model_version)
     return _walk_forward_from_records(
         records,
         history,
@@ -432,14 +465,18 @@ def build_calibration_report(
     train_size: int = 40,
     test_size: int = 20,
     generated_at: str | None = None,
+    model_version: str = "v1",
 ) -> dict[str, Any]:
     """Build the full research-only calibration report.
 
     ``generated_at`` is injectable (deterministic tests); defaults to the
     current UTC time. Everything else in the report is a pure function of the
-    input history and parameters."""
+    input history and parameters. ``model_version="v1"`` (default) keeps the
+    QA-014 ``calibration_report.v1`` schema; ``"v2"`` evaluates the QA-012
+    multi-factor model under ``calibration_report.v2`` (records gain a
+    ``factors`` object, parameters gain the v2 thresholds)."""
     history.validate()
-    records = run_rolling_classification(history)
+    records = run_rolling_classification(history, model_version=model_version)
     calibration = summarize_records(records, history, forward_horizon=forward_horizon)
     walk_forward = _walk_forward_from_records(
         records,
@@ -450,26 +487,32 @@ def build_calibration_report(
     )
     if generated_at is None:
         generated_at = datetime.now(timezone.utc).isoformat()
+    parameters = {
+        "model_version": model_version,
+        "forward_horizon": forward_horizon,
+        "train_size": train_size,
+        "test_size": test_size,
+        "return_window": _RETURN_WINDOW,
+        "return_normalise": _RETURN_NORMALISE,
+        "vix_low": _VIX_LOW,
+        "vix_high": _VIX_HIGH,
+        "volatility_high_threshold": _VOLATILITY_HIGH_THRESHOLD,
+        "trend_bull_threshold": _TREND_BULL_THRESHOLD,
+        "trend_bear_threshold": _TREND_BEAR_THRESHOLD,
+    }
+    if model_version == "v2":
+        parameters.update(v2_parameters())
     return {
-        "schema_version": REPORT_SCHEMA_VERSION,
+        "schema_version": (
+            REPORT_SCHEMA_VERSION if model_version == "v1" else REPORT_SCHEMA_VERSION_V2
+        ),
         "producer": PRODUCER,
         "research_only": True,
         "not_for_live_trading": True,
         "data_is_real": False,
         "input_source": source_label,
         "generated_at": generated_at,
-        "parameters": {
-            "forward_horizon": forward_horizon,
-            "train_size": train_size,
-            "test_size": test_size,
-            "return_window": _RETURN_WINDOW,
-            "return_normalise": _RETURN_NORMALISE,
-            "vix_low": _VIX_LOW,
-            "vix_high": _VIX_HIGH,
-            "volatility_high_threshold": _VOLATILITY_HIGH_THRESHOLD,
-            "trend_bull_threshold": _TREND_BULL_THRESHOLD,
-            "trend_bear_threshold": _TREND_BEAR_THRESHOLD,
-        },
+        "parameters": parameters,
         "history": {
             "bars": len(history.dates),
             "start_date": history.dates[0],

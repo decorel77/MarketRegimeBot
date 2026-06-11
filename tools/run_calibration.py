@@ -39,6 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--forward-horizon", type=int, default=5)
     parser.add_argument("--train-size", type=int, default=40)
     parser.add_argument("--test-size", type=int, default=20)
+    parser.add_argument(
+        "--model",
+        choices=["v1", "v2"],
+        default="v1",
+        help="Regime model to evaluate: v1 (production, default) or v2 (QA-012 research model).",
+    )
     return parser
 
 
@@ -57,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
             forward_horizon=args.forward_horizon,
             train_size=args.train_size,
             test_size=args.test_size,
+            model_version=args.model,
         )
         if args.out:
             written = write_calibration_report(report, Path(args.out))
@@ -65,6 +72,7 @@ def main(argv: list[str] | None = None) -> int:
                     {
                         "written_to": str(written),
                         "schema_version": report["schema_version"],
+                        "model_version": args.model,
                         "research_only": True,
                         "records_classified": report["calibration"]["records_classified"],
                         "fold_count": report["walk_forward"]["fold_count"],
