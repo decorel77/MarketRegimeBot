@@ -42,3 +42,16 @@ python -m unittest discover tests
 python -m tools.regime_autocycle --once
 ```
 
+## Research: calibration / walk-forward harness
+
+A research-only harness (QA-014) replays the production classifier across
+historical data and reports regime distribution, persistence, forward-return
+alignment, and walk-forward stability. It is offline, fail-closed, and never
+used for live trading:
+
+```powershell
+.\.venv\Scripts\python.exe -m tools.run_calibration --csv tests\fixtures\calibration_history.csv
+```
+
+See `docs/research/calibration_harness.md`.
+
