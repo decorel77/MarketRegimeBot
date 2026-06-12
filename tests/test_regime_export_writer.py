@@ -7,8 +7,10 @@ from pathlib import Path
 
 from core.regime_contracts import RegimeDecision, RegimeSafetyState
 from utils.regime_export_writer import (
+    AUTHORITY_ARTIFACT,
     EXPORT_SCHEMA_VERSION,
     build_regime_export,
+    build_regime_export_from_result_snapshot,
     write_regime_export,
 )
 
@@ -109,6 +111,30 @@ class TestBuildRegimeExport(unittest.TestCase):
                       "reason", "dry_run", "read_only", "runtime_enabled"):
             with self.subTest(field=field):
                 self.assertIn(field, payload)
+
+    def test_export_declares_result_snapshot_authority(self):
+        d = _make_decision()
+        payload = build_regime_export(d)
+        self.assertEqual(payload["derived_from"], AUTHORITY_ARTIFACT)
+        self.assertEqual(payload["source_schema_version"], "regime_result.v2")
+
+    def test_export_can_be_built_from_result_snapshot_authority(self):
+        d = _make_decision(market_regime="SIDEWAYS", confidence=64, risk_level="LOW")
+        snapshot = d.to_dict(produced_at="2026-06-12T10:00:00+00:00")
+        payload = build_regime_export_from_result_snapshot(snapshot)
+        self.assertEqual(payload["generated_at"], snapshot["produced_at"])
+        self.assertEqual(payload["market_regime"], snapshot["market_regime"])
+        self.assertEqual(payload["confidence"], snapshot["confidence"])
+        self.assertEqual(payload["risk_level"], snapshot["risk_level"])
+        self.assertEqual(payload["input_source"], snapshot["input_source"])
+        self.assertEqual(payload["data_is_real"], snapshot["data_is_real"])
+
+    def test_bad_snapshot_authority_fails_closed(self):
+        payload = build_regime_export_from_result_snapshot({"schema_version": "bad"})
+        self.assertEqual(payload["market_regime"], "UNKNOWN")
+        self.assertEqual(payload["confidence"], 0)
+        self.assertFalse(payload["data_is_real"])
+        self.assertEqual(payload["derived_from"], AUTHORITY_ARTIFACT)
 
 
 class TestWriteRegimeExport(unittest.TestCase):

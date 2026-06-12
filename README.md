@@ -33,7 +33,9 @@ Output shape:
 }
 ```
 
-The cycle writes only `data/system/result_snapshot.json` inside this project.
+The cycle writes `data/system/result_snapshot.json` as the authoritative regime
+snapshot and derives `data/system/regime_export.json` from it for v1 consumers.
+Both files stay inside this project.
 
 ## Validation
 
@@ -61,4 +63,3 @@ A research-stage multi-factor Regime Model v2 (QA-012) can be evaluated with
 A research-stage hysteresis/dwell-time filter (QA-013) can be applied with
 `--hysteresis` to reduce regime flip-flopping; default off. See
 `docs/regime_hysteresis.md`.
-

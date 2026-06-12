@@ -9,10 +9,16 @@
 
 ## Overview
 
-`regime_export.json` is the canonical read-only artifact that NovaTacticBot and
-other downstream bots read to obtain MarketRegimeBot's current classification.
-It is written by MarketRegimeBot only, inside its own `data/system/` directory.
-No other project writes this file.
+`data/system/result_snapshot.json` is MarketRegimeBot's authoritative regime
+artifact. It carries the `regime_result.v2` freshness envelope (`produced_at`,
+`fresh_until`, `schema_version`, `producer_id`) and is the source of truth for
+the current regime decision.
+
+`regime_export.json` is a derived v1 compatibility/read artifact for
+NovaTacticBot and any consumer still using the `regime_export.v1` shape. It must
+be generated from the authoritative result snapshot payload, never maintained as
+a second independent regime truth. If the authority payload is malformed, the
+export fails closed to `UNKNOWN`, confidence `0`, and `data_is_real: false`.
 
 ---
 
@@ -40,7 +46,9 @@ C:\NovaGPT\Apps\MarketRegimeBot\data\system\regime_export.json
   "reason": ["<string>", "..."],
   "dry_run": true,
   "read_only": true,
-  "runtime_enabled": false
+  "runtime_enabled": false,
+  "derived_from": "data/system/result_snapshot.json",
+  "source_schema_version": "regime_result.v2"
 }
 ```
 
@@ -63,6 +71,13 @@ C:\NovaGPT\Apps\MarketRegimeBot\data\system\regime_export.json
 | `dry_run` | bool | Always `true` — MarketRegimeBot never executes live |
 | `read_only` | bool | Always `true` — this file is written by MarketRegimeBot only |
 | `runtime_enabled` | bool | Always `false` — no runtime execution in this phase |
+
+Additional authority metadata:
+
+| Field | Type | Description |
+|---|---|---|
+| `derived_from` | string | Always `"data/system/result_snapshot.json"`; declares that this v1 export is derived from the authoritative v2 result snapshot |
+| `source_schema_version` | string | Schema version of the authority payload, normally `"regime_result.v2"` |
 
 ---
 
@@ -113,3 +128,5 @@ When NovaTacticBot reads this file, the adapter should produce a `TacticalEvent`
 - `runtime_enabled` is always `false`.
 - File is written only inside `MarketRegimeBot/data/system/`.
 - No broker fields, no order fields, no credential fields.
+- `result_snapshot.json` is the authority; `regime_export.json` must not be
+  treated as an independent source of regime truth.

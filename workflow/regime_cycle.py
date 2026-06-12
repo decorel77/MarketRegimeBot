@@ -16,7 +16,7 @@ from core.regime_contracts import (
 from core.market_data_reader import SOURCE_YFINANCE
 from core.snapshot_adapter import load_regime_input_from_snapshots
 from core.volatility_classifier import classify_volatility
-from utils.regime_export_writer import write_regime_export
+from utils.regime_export_writer import write_regime_export_from_result_snapshot
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULT_SNAPSHOT_PATH = PROJECT_ROOT / "data" / "system" / "result_snapshot.json"
@@ -166,6 +166,7 @@ def run_regime_cycle(
         if produced_at is not None
         else datetime.now(timezone.utc).isoformat()
     )
+    snapshot_payload = decision.to_dict(produced_at=effective_produced_at)
     output_path = None
     if write_snapshot:
         output_path = str(
@@ -173,7 +174,7 @@ def run_regime_cycle(
         )
     export_path = None
     if write_export:
-        export_path = str(write_regime_export(decision))
+        export_path = str(write_regime_export_from_result_snapshot(snapshot_payload))
     return {
         "status": decision.status,
         "dry_run": decision.dry_run,
@@ -186,5 +187,5 @@ def run_regime_cycle(
         "data_is_real": decision.data_is_real,
         "result_snapshot_path": output_path,
         "regime_export_path": export_path,
-        "decision": decision.to_dict(produced_at=effective_produced_at),
+        "decision": snapshot_payload,
     }

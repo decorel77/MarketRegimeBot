@@ -18,7 +18,7 @@ from pathlib import Path
 from core.market_data_reader import SOURCE_YFINANCE
 from core.regime_classifier import RegimeInput
 from core.regime_contracts import RegimeDecision, RegimeSafetyState
-from utils.regime_export_writer import build_regime_export
+from utils.regime_export_writer import AUTHORITY_ARTIFACT, build_regime_export
 from workflow import regime_cycle
 from workflow.regime_cycle import is_real_market_data
 
@@ -168,6 +168,9 @@ class OnDiskPairConsistencyTests(unittest.TestCase):
         self.assertEqual(snap["market_regime"], exp["market_regime"])
         self.assertEqual(snap["input_source"], exp["input_source"])
         self.assertEqual(snap["data_is_real"], exp["data_is_real"])
+        self.assertEqual(snap["produced_at"], exp["generated_at"])
+        self.assertEqual(exp["derived_from"], AUTHORITY_ARTIFACT)
+        self.assertEqual(exp["source_schema_version"], snap["schema_version"])
         # explicit (non-live) inputs must be flagged not-real
         self.assertEqual(snap["input_source"], "explicit")
         self.assertFalse(snap["data_is_real"])
