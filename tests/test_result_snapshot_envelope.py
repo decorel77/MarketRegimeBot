@@ -48,7 +48,7 @@ V1_SNAPSHOT_KEYS = (
     "allocation_export_enabled",
 )
 
-ENVELOPE_KEYS = ("produced_at", "fresh_until", "schema_version", "producer_id")
+ENVELOPE_KEYS = ("produced_at", "fresh_until", "schema_version", "producer_id", "public_safe")
 
 
 class EnvelopeBuilderTests(unittest.TestCase):
@@ -72,6 +72,13 @@ class EnvelopeBuilderTests(unittest.TestCase):
         env = build_snapshot_envelope()
         self.assertEqual(env["producer_id"], "MarketRegimeBot")
         self.assertEqual(PRODUCER_ID, "MarketRegimeBot")
+
+    def test_public_safe_is_true(self):
+        # Static dashboard-consumption marker; never a realness claim.
+        self.assertIs(build_snapshot_envelope()["public_safe"], True)
+        self.assertIs(
+            build_snapshot_envelope("2026-06-11T12:00:00+00:00")["public_safe"], True
+        )
 
     def test_default_produced_at_is_recent_utc(self):
         before = datetime.now(timezone.utc)
@@ -150,6 +157,7 @@ class SnapshotFileEnvelopeTests(unittest.TestCase):
         self.assertEqual(payload["fresh_until"], "2026-06-12T12:00:00+00:00")
         self.assertEqual(payload["schema_version"], RESULT_SCHEMA_VERSION)
         self.assertEqual(payload["producer_id"], PRODUCER_ID)
+        self.assertIs(payload["public_safe"], True)
 
     def test_written_snapshot_keeps_v1_keys(self):
         path = self._temp_snapshot_path()

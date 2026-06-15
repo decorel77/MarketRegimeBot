@@ -45,11 +45,17 @@ def _parse_produced_at(produced_at: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def build_snapshot_envelope(produced_at: str | None = None) -> dict[str, str]:
+def build_snapshot_envelope(produced_at: str | None = None) -> dict[str, Any]:
     """Build the QA-001 freshness envelope for result snapshot serialization.
 
     ``produced_at`` is injectable (tests, deterministic cycles); defaults to
     the current UTC time. ``fresh_until`` is ``produced_at`` + 24h.
+
+    ``public_safe`` is an unconditional True: the regime snapshot carries only
+    public-safe fields (regime label, confidence, risk level, reason, vol env,
+    safety flags) — no account/order ids, secrets, or machine paths. It is a
+    static dashboard-consumption marker and is NOT a realness claim; the
+    fail-closed realness field stays ``data_is_real`` on the decision.
     """
     if produced_at is None:
         produced = datetime.now(timezone.utc)
@@ -60,6 +66,7 @@ def build_snapshot_envelope(produced_at: str | None = None) -> dict[str, str]:
         "fresh_until": (produced + FRESHNESS_WINDOW).isoformat(),
         "schema_version": RESULT_SCHEMA_VERSION,
         "producer_id": PRODUCER_ID,
+        "public_safe": True,
     }
 
 
