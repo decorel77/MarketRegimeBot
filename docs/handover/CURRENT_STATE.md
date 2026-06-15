@@ -82,6 +82,8 @@ The naming mismatch between classifier IDs and registry IDs remains unresolved
 | REGIME-TACTICBOT-001 | TacticBot-compatible export schema | TODO | MASTER-017 |
 | REGIME-PHASE-004 | Risk-on/risk-off classifier | TODO | — |
 
+> REGIME-PHASE-004 synthetic test plan: `docs/REGIME_PHASE_004_synthetic_plan.md` (synthetic-only, fail-closed, advisory-only; live market data remains out of scope / human-gated).
+
 ---
 
 ### Safety lock (all phases)
