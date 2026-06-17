@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "_intent": "strong risk-off regime + high volatility, real+fresh -> RISK_OFF / OK",
+  "regime": "BEAR",
+  "regime_confidence": 0.8,
+  "volatility_class": "HIGH_VOL",
+  "data_is_real": true,
+  "is_fresh": true,
+  "produced_at": "2026-06-15T10:30:00+00:00"
+}

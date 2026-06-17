@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "_intent": "per-signal provenance mixes real and synthetic -> data_is_real reduces to false (untrusted)",
+  "regime": "BULL",
+  "regime_confidence": 0.8,
+  "volatility_class": "LOW_VOL",
+  "data_is_real": [true, false],
+  "is_fresh": true,
+  "produced_at": "2026-06-15T11:00:00+00:00"
+}

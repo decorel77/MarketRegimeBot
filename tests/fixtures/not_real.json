@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "_intent": "data_is_real=false -> UNKNOWN / NOT_REAL, never trusted",
+  "regime": "BULL",
+  "regime_confidence": 0.8,
+  "volatility_class": "LOW_VOL",
+  "data_is_real": false,
+  "is_fresh": true,
+  "produced_at": "2026-06-15T11:00:00+00:00"
+}

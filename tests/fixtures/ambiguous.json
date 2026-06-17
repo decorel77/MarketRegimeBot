@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "_intent": "conflicting signals (risk-on regime + high volatility) -> UNKNOWN / INSUFFICIENT",
+  "regime": "BULL",
+  "regime_confidence": 0.75,
+  "volatility_class": "HIGH_VOL",
+  "data_is_real": true,
+  "is_fresh": true,
+  "produced_at": "2026-06-15T11:30:00+00:00"
+}

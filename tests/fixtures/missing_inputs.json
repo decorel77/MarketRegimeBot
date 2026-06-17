@@ -1,0 +1,8 @@
+{
+  "_synthetic": true,
+  "_intent": "required fields absent (no regime_confidence, no data_is_real) -> UNKNOWN / MISSING",
+  "regime": "BULL",
+  "volatility_class": "LOW_VOL",
+  "is_fresh": true,
+  "produced_at": "2026-06-15T11:00:00+00:00"
+}
