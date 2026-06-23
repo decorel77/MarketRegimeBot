@@ -95,6 +95,28 @@ class TestUnknown(unittest.TestCase):
         r = classify_volatility(-0.5)
         self.assertEqual(r.confidence, 0)
 
+    def test_bool_true_is_unknown_not_high_vol(self):
+        # float(True) == 1.0 would otherwise classify as HIGH_VOL with full
+        # confidence; a bool is not a real volatility score → fail closed.
+        r = classify_volatility(True)
+        self.assertEqual(r.volatility_env, "UNKNOWN")
+        self.assertEqual(r.confidence, 0)
+
+    def test_bool_false_is_unknown_not_low_vol(self):
+        # float(False) == 0.0 would otherwise classify as LOW_VOL with full
+        # confidence; a bool is not a real volatility score → fail closed.
+        r = classify_volatility(False)
+        self.assertEqual(r.volatility_env, "UNKNOWN")
+        self.assertEqual(r.confidence, 0)
+
+    def test_nan_score_is_unknown(self):
+        r = classify_volatility(float("nan"))
+        self.assertEqual(r.volatility_env, "UNKNOWN")
+
+    def test_infinity_score_is_unknown(self):
+        r = classify_volatility(float("inf"))
+        self.assertEqual(r.volatility_env, "UNKNOWN")
+
 
 class TestVolatilityResult(unittest.TestCase):
     def test_to_dict_has_required_keys(self):

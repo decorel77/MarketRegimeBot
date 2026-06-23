@@ -63,7 +63,15 @@ def classify_volatility(volatility_score: float) -> VolatilityResult:
     """Classify a volatility_score into a VolatilityResult.
 
     Returns UNKNOWN for scores outside [0, 1].  Never raises.
+
+    Fail-closed on a ``bool`` input: although ``float(True) == 1.0`` and
+    ``float(False) == 0.0`` would otherwise classify silently as HIGH_VOL /
+    LOW_VOL, a boolean is not a real volatility score.  This mirrors the
+    stricter ``risk_classifier._is_real_number`` type gate and yields UNKNOWN
+    rather than a fabricated, confident result.
     """
+    if isinstance(volatility_score, bool):
+        return _UNKNOWN_RESULT
     try:
         v = float(volatility_score)
     except (TypeError, ValueError):
