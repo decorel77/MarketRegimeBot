@@ -283,5 +283,44 @@ class TestMissingFields(unittest.TestCase):
         self.assertTrue(any("push_requires_human_approval" in e for e in errors))
 
 
+class TestMalformedTopLevel(unittest.TestCase):
+    """SAFE hardening: the validator is reporting-only and must never raise. A
+    structurally invalid policy file (top-level JSON array / scalar / null /
+    string) previously AttributeError'd on data.keys(); it must now return a
+    single clear error. Synthetic temp files only — never reads a real export."""
+
+    def _write_raw(self, content: str) -> Path:
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
+        tmp.write(content)
+        tmp.flush()
+        return Path(tmp.name)
+
+    def test_top_level_array_fails_closed(self):
+        errors = validate(self._write_raw("[1, 2, 3]"))
+        self.assertEqual(errors, ["Top-level policy must be a JSON object"])
+
+    def test_top_level_scalar_fails_closed(self):
+        errors = validate(self._write_raw("5"))
+        self.assertEqual(errors, ["Top-level policy must be a JSON object"])
+
+    def test_top_level_null_fails_closed(self):
+        errors = validate(self._write_raw("null"))
+        self.assertEqual(errors, ["Top-level policy must be a JSON object"])
+
+    def test_top_level_string_fails_closed(self):
+        errors = validate(self._write_raw('"hello"'))
+        self.assertEqual(errors, ["Top-level policy must be a JSON object"])
+
+    def test_invalid_json_still_reported_separately(self):
+        errors = validate(self._write_raw("{not valid json"))
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith("Invalid JSON:"))
+
+    def test_empty_object_reports_missing_keys_not_crash(self):
+        errors = validate(self._write_raw("{}"))
+        self.assertTrue(errors)
+        self.assertTrue(any("Missing top-level key" in e for e in errors))
+
+
 if __name__ == "__main__":
     unittest.main()

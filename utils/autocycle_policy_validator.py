@@ -82,6 +82,11 @@ def validate(policy_path: Path = POLICY_PATH) -> list[str]:
     except json.JSONDecodeError as exc:
         return [f"Invalid JSON: {exc}"]
 
+    # Fail closed on a structurally invalid top level: a JSON array/scalar/null
+    # would AttributeError on data.keys()/data.get(...). Report, never raise.
+    if not isinstance(data, dict):
+        return ["Top-level policy must be a JSON object"]
+
     # Top-level keys
     for key in sorted(REQUIRED_TOP_LEVEL - set(data.keys())):
         errors.append(f"Missing top-level key: '{key}'")
