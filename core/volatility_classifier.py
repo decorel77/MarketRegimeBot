@@ -30,6 +30,19 @@ VALID_VOL_ENVS = frozenset({"LOW_VOL", "NORMAL", "HIGH_VOL", "UNKNOWN"})
 SCHEMA_VERSION = "volatility_classifier.v1"
 
 
+def _is_real_number(value: Any) -> bool:
+    """True only for a genuine, finite-capable real number.
+
+    Mirrors ``risk_classifier._is_real_number``: rejects ``bool`` (so True/False
+    do not classify as 1.0 / 0.0) and rejects ``NaN`` (``value != value``).
+    Crucially it also rejects *non-numeric types* — a numeric string such as
+    ``"0.5"`` is malformed input and must not be silently coerced via
+    ``float(...)`` into a confident, fabricated classification. ``inf`` passes
+    this type gate and is caught by the downstream [0, 1] range check.
+    """
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value == value
+
+
 # --- Result type ----------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -64,18 +77,16 @@ def classify_volatility(volatility_score: float) -> VolatilityResult:
 
     Returns UNKNOWN for scores outside [0, 1].  Never raises.
 
-    Fail-closed on a ``bool`` input: although ``float(True) == 1.0`` and
-    ``float(False) == 0.0`` would otherwise classify silently as HIGH_VOL /
-    LOW_VOL, a boolean is not a real volatility score.  This mirrors the
-    stricter ``risk_classifier._is_real_number`` type gate and yields UNKNOWN
-    rather than a fabricated, confident result.
+    Fail-closed on any non-real-number input via ``_is_real_number``: a
+    ``bool`` (``float(True) == 1.0``), a ``NaN``, or a numeric *string* such as
+    ``"0.5"`` would otherwise classify silently into a fabricated, confident
+    result.  This mirrors the stricter ``risk_classifier._is_real_number`` type
+    gate and yields UNKNOWN instead.  ``inf`` passes the type gate and is
+    rejected by the [0, 1] range check below.
     """
-    if isinstance(volatility_score, bool):
+    if not _is_real_number(volatility_score):
         return _UNKNOWN_RESULT
-    try:
-        v = float(volatility_score)
-    except (TypeError, ValueError):
-        return _UNKNOWN_RESULT
+    v = float(volatility_score)
 
     if not 0.0 <= v <= 1.0:
         return _UNKNOWN_RESULT

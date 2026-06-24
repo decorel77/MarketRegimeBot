@@ -18,6 +18,8 @@ No broker imports. Read-only. ADVISORY_ONLY.
 from __future__ import annotations
 
 import logging
+import math
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from core.regime_classifier import DRY_RUN_INPUTS, RegimeInput
@@ -45,16 +47,47 @@ SOURCE_FALLBACK = "yfinance_error"
 
 # --- Internal helpers -----------------------------------------------------------
 
+def _finite_number(value: object) -> bool:
+    """True only for a genuine finite real number (rejects bool / NaN / inf).
+
+    Pure-helper guard so the score computations below stay fail-closed even when
+    a caller does not pre-validate its input: a ``bool`` masquerading as a price,
+    a NaN/inf from upstream parsing, or a non-numeric type would otherwise feed a
+    fabricated or crashing computation.
+    """
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
 def _compute_trend_score(prices: "dict[str, list[float]]") -> float | None:
-    """Return average 20-day return for SPY+QQQ normalised to [-1, 1]."""
+    """Return average 20-day return for SPY+QQQ normalised to [-1, 1].
+
+    Fails closed (returns None) on a malformed container: a non-Mapping
+    ``prices``, a non-sequence / too-short close series, a non-finite element,
+    or a zero/negative reference price (which would raise ZeroDivisionError).
+    """
+    if not isinstance(prices, Mapping):
+        return None
+
     returns: list[float] = []
     for ticker, closes in prices.items():
+        if not isinstance(closes, (list, tuple)):
+            logger.warning("Non-sequence price data for %s; skipping computation.", ticker)
+            return None
         if len(closes) < 2:
             logger.warning("Insufficient price data for %s (%d bars)", ticker, len(closes))
             return None
         # Use last N sessions
         n = min(_RETURN_WINDOW, len(closes) - 1)
-        ret = (closes[-1] - closes[-(n + 1)]) / closes[-(n + 1)]
+        latest = closes[-1]
+        base = closes[-(n + 1)]
+        if not _finite_number(latest) or not _finite_number(base) or base <= 0.0:
+            logger.warning("Malformed close prices for %s; skipping computation.", ticker)
+            return None
+        ret = (latest - base) / base
         returns.append(ret)
 
     if not returns:
@@ -65,8 +98,15 @@ def _compute_trend_score(prices: "dict[str, list[float]]") -> float | None:
     return max(-1.0, min(1.0, round(score, 4)))
 
 
-def _compute_volatility_score(vix_close: float) -> float:
-    """Map a VIX close price to [0, 1]."""
+def _compute_volatility_score(vix_close: float) -> float | None:
+    """Map a VIX close price to [0, 1].
+
+    Fails closed (returns None) on a malformed VIX close — a non-finite value
+    (NaN/inf), a non-number, or a non-positive price — rather than fabricating a
+    confident 0.0 (LOW_VOL) from nonsensical input.
+    """
+    if not _finite_number(vix_close) or vix_close <= 0.0:
+        return None
     if vix_close <= _VIX_LOW:
         return 0.0
     if vix_close >= _VIX_HIGH:
@@ -156,6 +196,9 @@ def read_market_regime_inputs(
 
         vix_close = float(vix_series.iloc[-1])
         volatility_score = _compute_volatility_score(vix_close)
+        if volatility_score is None:
+            logger.warning("Could not compute volatility score; using fallback.")
+            return DRY_RUN_INPUTS, SOURCE_FALLBACK
 
     except Exception as exc:
         logger.warning("VIX data download failed: %s", exc)
