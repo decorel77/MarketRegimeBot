@@ -12,6 +12,20 @@ class RegimeInput:
     volatility_score: float  # 0.0 to 1.0; higher = more volatile
 
     def validate(self) -> None:
+        # Reject non-real inputs (bool — an int subclass — strings, None, NaN)
+        # before the range checks so a boolean can never masquerade as 1.0/0.0
+        # and a non-numeric type raises a clear ValueError rather than a
+        # TypeError from the comparison.
+        for name, value in (
+            ("trend_score", self.trend_score),
+            ("volatility_score", self.volatility_score),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or value != value  # NaN
+            ):
+                raise ValueError(f"{name} must be a real number, got {value!r}")
         if not -1.0 <= self.trend_score <= 1.0:
             raise ValueError(f"trend_score must be in [-1, 1], got {self.trend_score}")
         if not 0.0 <= self.volatility_score <= 1.0:

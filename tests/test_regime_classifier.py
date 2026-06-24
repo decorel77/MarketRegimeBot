@@ -120,5 +120,43 @@ class ConfidenceBoundsTests(unittest.TestCase):
             classify_regime(RegimeInput(trend_score=0.0, volatility_score=-0.1))
 
 
+class MalformedInputTests(unittest.TestCase):
+    """SAFE hardening: validate() must reject non-real inputs with a clear
+    ValueError so a bool can never masquerade as 1.0/0.0 and a non-numeric type
+    does not slip through (or raise a bare TypeError from the comparison)."""
+
+    def test_bool_trend_score_raises(self):
+        # True == 1 would otherwise pass the [-1, 1] range check and classify
+        # as a fully bullish trend.
+        with self.assertRaises(ValueError):
+            classify_regime(RegimeInput(trend_score=True, volatility_score=0.2))
+
+    def test_bool_volatility_score_raises(self):
+        with self.assertRaises(ValueError):
+            classify_regime(RegimeInput(trend_score=0.2, volatility_score=False))
+
+    def test_nan_trend_score_raises(self):
+        with self.assertRaises(ValueError):
+            classify_regime(RegimeInput(trend_score=float("nan"), volatility_score=0.2))
+
+    def test_nan_volatility_score_raises(self):
+        with self.assertRaises(ValueError):
+            classify_regime(RegimeInput(trend_score=0.2, volatility_score=float("nan")))
+
+    def test_inf_scores_raise(self):
+        for ts, vs in [(float("inf"), 0.2), (float("-inf"), 0.2), (0.2, float("inf"))]:
+            with self.subTest(trend_score=ts, volatility_score=vs):
+                with self.assertRaises(ValueError):
+                    classify_regime(RegimeInput(trend_score=ts, volatility_score=vs))
+
+    def test_string_score_raises_valueerror_not_typeerror(self):
+        with self.assertRaises(ValueError):
+            classify_regime(RegimeInput(trend_score="0.8", volatility_score=0.2))
+
+    def test_none_score_raises(self):
+        with self.assertRaises(ValueError):
+            classify_regime(RegimeInput(trend_score=None, volatility_score=0.2))
+
+
 if __name__ == "__main__":
     unittest.main()

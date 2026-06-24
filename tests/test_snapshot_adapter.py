@@ -116,6 +116,24 @@ class TrendExtractionTests(unittest.TestCase):
         self.assertLessEqual(score, 1.0)
         self.assertGreaterEqual(score, -1.0)
 
+    def test_nan_allocation_fails_closed(self):
+        # NaN/+-inf would otherwise survive the min/max clamp as a spurious
+        # strong directional trend (NaN -> 1.0). Must fall back to None.
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=bad):
+                self.assertIsNone(_trend_from_allocation(_minimal_allocation(bad)))
+
+    def test_bool_allocation_fails_closed(self):
+        self.assertIsNone(_trend_from_allocation(_minimal_allocation(True)))
+
+    def test_string_allocation_returns_none(self):
+        data = {"recommendation": {"recommended_allocation": {"NovaBotV2": "ninety"}}}
+        self.assertIsNone(_trend_from_allocation(data))
+
+    def test_non_mapping_allocation_returns_none(self):
+        data = {"recommendation": {"recommended_allocation": ["NovaBotV2", 90]}}
+        self.assertIsNone(_trend_from_allocation(data))
+
 
 # ---------------------------------------------------------------------------
 # _volatility_from_options
@@ -140,6 +158,18 @@ class VolatilityExtractionTests(unittest.TestCase):
     def test_volatility_never_negative(self):
         vol = _volatility_from_options(_minimal_options(warnings=0, chains=100))
         self.assertGreaterEqual(vol, 0.0)
+
+    def test_nan_inf_warnings_fail_closed(self):
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=bad):
+                self.assertIsNone(_volatility_from_options(_minimal_options(warnings=bad)))
+
+    def test_bool_warnings_fails_closed(self):
+        # A boolean warnings_count must not be counted as 1.
+        self.assertIsNone(_volatility_from_options(_minimal_options(warnings=True)))
+
+    def test_string_warnings_returns_none(self):
+        self.assertIsNone(_volatility_from_options({"health_metrics": {"warnings_count": "x", "chains_loaded": 8}}))
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +234,23 @@ class SnapshotLoadTests(unittest.TestCase):
     def test_both_missing_falls_back_to_synthetic(self):
         paths = self._paths()  # no files written
         inputs, source = load_regime_input_from_snapshots(paths)
+        self.assertEqual(source, "synthetic_fallback")
+        self.assertEqual(inputs, DRY_RUN_INPUTS)
+
+    def test_nan_allocation_value_falls_back_to_synthetic(self):
+        # A NaN allocation percentage (valid JSON to json.loads) must not become
+        # a spurious strong trend; the loader falls back to synthetic.
+        base = Path(self.tmpdir)
+        alloc_path = base / "nan_alloc.json"
+        alloc_path.write_text(
+            '{"recommendation": {"recommended_allocation": {"NovaBotV2": NaN}}}',
+            encoding="utf-8",
+        )
+        opts_path = base / "opts_ok.json"
+        _write_json(opts_path, _minimal_options(1, 8))
+        inputs, source = load_regime_input_from_snapshots(
+            {"NovaAllocationBot": alloc_path, "NovaBotV2Options": opts_path}
+        )
         self.assertEqual(source, "synthetic_fallback")
         self.assertEqual(inputs, DRY_RUN_INPUTS)
 

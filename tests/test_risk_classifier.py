@@ -71,6 +71,68 @@ class FailClosedInputs(unittest.TestCase):
             self.assertEqual(r.status, "MISSING")
 
 
+class MalformedTypedInputs(unittest.TestCase):
+    """SAFE hardening coverage: pin each malformed-type path to a fail-closed
+    INVALID (never OK, never a raise) using in-memory signal dicts — no fixtures,
+    no I/O. Locks in that bool / NaN / +-inf / string numerics and non-string
+    enum fields are all rejected before scoring."""
+
+    BASE = {
+        "regime": "BULL",
+        "regime_confidence": 0.8,
+        "volatility_class": "LOW_VOL",
+        "data_is_real": True,
+        "is_fresh": True,
+    }
+
+    def _classify(self, **overrides):
+        signals = dict(self.BASE)
+        signals.update(overrides)
+        return classify_risk(signals, now=NOW)
+
+    def test_base_is_actionable_ok(self):
+        r = self._classify()
+        self.assertEqual((r.label, r.status), ("RISK_ON", "OK"))
+
+    def test_bool_confidence_rejected(self):
+        # True == 1.0 would otherwise satisfy the [0, 1] range check.
+        for v in (True, False):
+            with self.subTest(value=v):
+                r = self._classify(regime_confidence=v)
+                self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_nan_confidence_rejected(self):
+        r = self._classify(regime_confidence=float("nan"))
+        self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_inf_confidence_rejected(self):
+        for v in (float("inf"), float("-inf")):
+            with self.subTest(value=v):
+                r = self._classify(regime_confidence=v)
+                self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_string_confidence_rejected(self):
+        r = self._classify(regime_confidence="0.8")
+        self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_non_string_regime_rejected(self):
+        r = self._classify(regime=123)
+        self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_unknown_volatility_class_rejected(self):
+        r = self._classify(volatility_class="WILD")
+        self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_non_bool_is_fresh_rejected(self):
+        r = self._classify(is_fresh="yes")
+        self.assertEqual((r.label, r.status), ("UNKNOWN", "INVALID"))
+
+    def test_missing_single_required_key_is_missing(self):
+        signals = {k: v for k, v in self.BASE.items() if k != "volatility_class"}
+        r = classify_risk(signals, now=NOW)
+        self.assertEqual((r.label, r.status), ("UNKNOWN", "MISSING"))
+
+
 class Freshness(unittest.TestCase):
     def test_stale_fixture_is_non_actionable(self):
         r = classify_risk(load("stale"), now=NOW)

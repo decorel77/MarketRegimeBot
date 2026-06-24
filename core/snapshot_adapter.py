@@ -46,6 +46,25 @@ def _safe_load_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def _finite_float(value: Any) -> float | None:
+    """Coerce ``value`` to a finite float, failing closed to ``None``.
+
+    Rejects ``bool`` (an ``int`` subclass — ``True``/``False`` must not become
+    ``1.0``/``0.0``) and ``NaN``/``+-inf`` (which ``json.loads`` accepts and
+    which would otherwise survive a ``min``/``max`` clamp as a spurious bounded
+    score). Returns ``None`` on any non-numeric value too.
+    """
+    if isinstance(value, bool):
+        return None
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return None
+    if num != num or num in (float("inf"), float("-inf")):  # NaN / +-inf
+        return None
+    return num
+
+
 def _trend_from_allocation(data: dict[str, Any]) -> float | None:
     """Derive trend_score from NovaAllocationBot recommendation.
 
@@ -55,7 +74,9 @@ def _trend_from_allocation(data: dict[str, Any]) -> float | None:
     """
     try:
         alloc = data["recommendation"]["recommended_allocation"]
-        novabot_pct = float(alloc["NovaBotV2"])
+        novabot_pct = _finite_float(alloc["NovaBotV2"])
+        if novabot_pct is None:
+            return None
         trend = round((novabot_pct / 100.0) * 2.0 - 1.0, 3)
         return max(-1.0, min(1.0, trend))
     except Exception as exc:
@@ -71,9 +92,12 @@ def _volatility_from_options(data: dict[str, Any]) -> float | None:
     """
     try:
         metrics = data["health_metrics"]
-        warnings = int(metrics.get("warnings_count", 0))
-        chains = max(int(metrics.get("chains_loaded", 1)), 1)
-        vol = round(min(1.0, warnings / chains), 3)
+        warnings = _finite_float(metrics.get("warnings_count", 0))
+        chains = _finite_float(metrics.get("chains_loaded", 1))
+        if warnings is None or chains is None:
+            return None
+        chains_i = max(int(chains), 1)
+        vol = round(min(1.0, int(warnings) / chains_i), 3)
         return max(0.0, vol)
     except Exception as exc:
         logger.debug("Cannot extract volatility from options snapshot: %s", exc)
