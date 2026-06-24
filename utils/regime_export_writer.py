@@ -34,7 +34,10 @@ def _timestamp_from_snapshot(
 ) -> str:
     if generated_at:
         return generated_at
-    if snapshot is not None:
+    # Guard the container, not just None: this runs before the caller's
+    # try/except, so a non-Mapping snapshot (list/scalar/str) must not
+    # AttributeError on .get(...) — that would break the "never raises" contract.
+    if isinstance(snapshot, Mapping):
         produced_at = snapshot.get("produced_at")
         if isinstance(produced_at, str) and produced_at.strip():
             return produced_at

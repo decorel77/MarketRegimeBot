@@ -137,6 +137,60 @@ class TestBuildRegimeExport(unittest.TestCase):
         self.assertEqual(payload["derived_from"], AUTHORITY_ARTIFACT)
 
 
+class TestBuildRegimeExportMalformedAuthority(unittest.TestCase):
+    """SAFE hardening: build_regime_export_from_result_snapshot promises it
+    Never raises. A non-Mapping authority payload (list / scalar / string /
+    None) reached _timestamp_from_snapshot before the try/except and
+    AttributeError'd on .get(...); it must fail closed to a safe UNKNOWN export.
+    All synthetic in-memory payloads — never reads the real regime_export.json."""
+
+    def test_non_mapping_authority_fails_closed_without_generated_at(self):
+        for bad in ([1, 2, 3], "hello", 5, None):
+            with self.subTest(authority=bad):
+                payload = build_regime_export_from_result_snapshot(bad)
+                self.assertEqual(payload["market_regime"], "UNKNOWN")
+                self.assertEqual(payload["confidence"], 0)
+                self.assertFalse(payload["data_is_real"])
+                self.assertEqual(payload["schema_version"], EXPORT_SCHEMA_VERSION)
+
+    def test_non_mapping_authority_with_generated_at_uses_it(self):
+        payload = build_regime_export_from_result_snapshot([1, 2, 3], generated_at="2026-06-24T00:00:00+00:00")
+        self.assertEqual(payload["market_regime"], "UNKNOWN")
+        self.assertEqual(payload["generated_at"], "2026-06-24T00:00:00+00:00")
+
+    def test_nan_confidence_authority_fails_closed(self):
+        snapshot = {
+            "market_regime": "BULL",
+            "confidence": float("nan"),
+            "risk_level": "NORMAL",
+            "data_is_real": True,
+        }
+        payload = build_regime_export_from_result_snapshot(snapshot, generated_at="2026-06-24T00:00:00+00:00")
+        self.assertEqual(payload["market_regime"], "UNKNOWN")
+        self.assertEqual(payload["confidence"], 0)
+
+    def test_missing_required_field_fails_closed(self):
+        payload = build_regime_export_from_result_snapshot(
+            {"confidence": 60, "risk_level": "NORMAL"}, generated_at="2026-06-24T00:00:00+00:00"
+        )
+        self.assertEqual(payload["market_regime"], "UNKNOWN")
+
+    def test_valid_authority_still_preserved(self):
+        snapshot = {
+            "project": "MarketRegimeBot",
+            "market_regime": "BEAR",
+            "confidence": 70,
+            "risk_level": "HIGH",
+            "data_is_real": True,
+            "reason": ["downtrend"],
+            "produced_at": "2026-06-24T00:00:00+00:00",
+        }
+        payload = build_regime_export_from_result_snapshot(snapshot)
+        self.assertEqual(payload["market_regime"], "BEAR")
+        self.assertEqual(payload["confidence"], 70)
+        self.assertTrue(payload["data_is_real"])
+
+
 class TestWriteRegimeExport(unittest.TestCase):
     def _export_path(self) -> Path:
         # Must be inside the MarketRegimeBot project root for the path guard
