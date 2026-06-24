@@ -171,6 +171,19 @@ class VolatilityExtractionTests(unittest.TestCase):
     def test_string_warnings_returns_none(self):
         self.assertIsNone(_volatility_from_options({"health_metrics": {"warnings_count": "x", "chains_loaded": 8}}))
 
+    def test_non_mapping_health_metrics_returns_none(self):
+        # Symmetric with _trend_from_allocation's non-mapping guard: a
+        # health_metrics that is a list/scalar/string must fail closed to None,
+        # never AttributeError on .get(...).
+        for bad in (["not", "a", "dict"], "oops", 42, None):
+            with self.subTest(health_metrics=bad):
+                self.assertIsNone(_volatility_from_options({"health_metrics": bad}))
+
+    def test_non_dict_data_returns_none(self):
+        for bad in (None, [], "x", 42):
+            with self.subTest(data=bad):
+                self.assertIsNone(_volatility_from_options(bad))
+
 
 # ---------------------------------------------------------------------------
 # load_regime_input_from_snapshots
