@@ -71,6 +71,11 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
+def _is_real_number(value: object) -> bool:
+    """True only for a real int/float (bool excluded — True is not a price)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 # --- Inputs -----------------------------------------------------------------------------
 
 
@@ -91,7 +96,9 @@ class RegimeInputV2:
             "momentum_score": (self.momentum_score, -1.0, 1.0),
         }
         for name, (value, low, high) in bounds.items():
-            if not isinstance(value, (int, float)) or not math.isfinite(value):
+            # Reject bool (an int subclass — True must not slip through as 1.0),
+            # consistent with the v1 RegimeInput.validate hardening.
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise ValueError(f"{name} must be a finite number, got {value!r}")
             if not low <= value <= high:
                 raise ValueError(f"{name} must be in [{low}, {high}], got {value}")
@@ -135,11 +142,14 @@ def compute_v2_inputs(
     """
     series = {"SPY": spy_closes, "QQQ": qqq_closes}
     for closes in series.values():
-        if len(closes) < SHORT_WINDOW + 1:
+        # Fail closed (return None) on a malformed container or element instead
+        # of crashing: a non-sequence has no len(), and math.isfinite raises on a
+        # non-numeric / bool element. The docstring promises None on bad data.
+        if not isinstance(closes, (list, tuple)) or len(closes) < SHORT_WINDOW + 1:
             return None
-        if any(not math.isfinite(c) or c <= 0.0 for c in closes):
+        if any(not _is_real_number(c) or not math.isfinite(c) or c <= 0.0 for c in closes):
             return None
-    if not math.isfinite(vix_close) or vix_close <= 0.0:
+    if not _is_real_number(vix_close) or not math.isfinite(vix_close) or vix_close <= 0.0:
         return None
 
     trend_score = _compute_trend_score(series)

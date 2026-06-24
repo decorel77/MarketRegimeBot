@@ -1,6 +1,11 @@
 import unittest
 
-from core.regime_contracts import RegimeValidationError, build_unknown_regime_decision
+from core.regime_contracts import (
+    RegimeSafetyState,
+    RegimeValidationError,
+    RegimeDecision,
+    build_unknown_regime_decision,
+)
 
 
 class RegimeContractsTests(unittest.TestCase):
@@ -36,6 +41,41 @@ class RegimeContractsTests(unittest.TestCase):
         )
         with self.assertRaises(RegimeValidationError):
             unsafe.validate()
+
+
+class RegimeConfidenceTypeTests(unittest.TestCase):
+    """A malformed confidence *type* must raise RegimeValidationError, never an
+    opaque TypeError, and bool True must not be accepted as confidence 1."""
+
+    def _decision(self, confidence):
+        return RegimeDecision(
+            project="MarketRegimeBot",
+            status="SAFE_DRY_RUN_REGIME",
+            market_regime="BULL",
+            confidence=confidence,
+            risk_level="NORMAL",
+            safety=RegimeSafetyState(),
+        )
+
+    def test_bool_confidence_rejected(self):
+        # True is an int subclass — must not slip through as confidence 1.
+        for bad in (True, False):
+            with self.assertRaises(RegimeValidationError):
+                self._decision(bad).validate()
+
+    def test_non_numeric_confidence_raises_contract_error(self):
+        for bad in ("50", None, [50], {"c": 50}):
+            with self.assertRaises(RegimeValidationError):
+                self._decision(bad).validate()
+
+    def test_non_finite_confidence_rejected(self):
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            with self.assertRaises(RegimeValidationError):
+                self._decision(bad).validate()
+
+    def test_well_formed_int_and_float_confidence_accepted(self):
+        for ok in (0, 50, 100, 50.0):
+            self._decision(ok).validate()  # must not raise
 
 
 if __name__ == "__main__":

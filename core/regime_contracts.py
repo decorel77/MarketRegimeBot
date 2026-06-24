@@ -129,7 +129,15 @@ class RegimeDecision:
             raise RegimeValidationError("Unknown market regime.")
         if self.risk_level not in VALID_RISK_LEVELS:
             raise RegimeValidationError("Unknown risk level.")
-        if not 0 <= self.confidence <= 100:
+        # Fail closed on a malformed confidence *type* with a clear contract
+        # error instead of accepting bool True as 1 or letting a string raise an
+        # opaque TypeError in the range comparison below.
+        conf = self.confidence
+        if isinstance(conf, bool) or not isinstance(conf, (int, float)):
+            raise RegimeValidationError("Confidence must be a number between 0 and 100.")
+        if conf != conf or conf in (float("inf"), float("-inf")):
+            raise RegimeValidationError("Confidence must be a finite number between 0 and 100.")
+        if not 0 <= conf <= 100:
             raise RegimeValidationError("Confidence must be between 0 and 100.")
         if self.volatility_env not in VALID_VOL_ENVS:
             raise RegimeValidationError(f"Unknown volatility_env: {self.volatility_env}")
