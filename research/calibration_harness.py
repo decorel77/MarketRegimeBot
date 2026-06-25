@@ -159,13 +159,31 @@ class History:
                     f"row {line_no} is missing required columns: {missing}"
                 )
             try:
-                spy.append(float(row["spy_close"]))
-                qqq.append(float(row["qqq_close"]))
-                vix.append(float(row["vix_close"]))
+                spy_value = float(row["spy_close"])
+                qqq_value = float(row["qqq_close"])
+                vix_value = float(row["vix_close"])
             except (TypeError, ValueError) as exc:
                 raise CalibrationDataError(
                     f"row {line_no} has a non-numeric price value"
                 ) from exc
+            # Fail closed at the point of conversion: float() accepts
+            # "inf"/"nan"/"Infinity" (and json.loads parses bare NaN/Infinity),
+            # so guard each price here rather than relying on validate() running
+            # afterwards -- otherwise a short history's length check masks the
+            # real (non-finite) reason and a non-finite price could leak if any
+            # caller used from_rows output before validate().
+            for column, value in (
+                ("spy_close", spy_value),
+                ("qqq_close", qqq_value),
+                ("vix_close", vix_value),
+            ):
+                if not math.isfinite(value):
+                    raise CalibrationDataError(
+                        f"row {line_no} has a non-finite {column} price: {value!r}"
+                    )
+            spy.append(spy_value)
+            qqq.append(qqq_value)
+            vix.append(vix_value)
             dates.append(str(row["date"]))
         history = cls(
             dates=tuple(dates),
