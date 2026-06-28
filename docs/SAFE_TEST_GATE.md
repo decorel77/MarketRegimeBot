@@ -77,11 +77,32 @@ clean fix is to `git rm --cached data/system/regime_export.json` + gitignore it
 (as was done for `_test_regime_export.json`), which rewrites OFF-LIMITS tracking and
 is itself HUMAN_GATED.
 
-## Disposition
+## Disposition (original)
 
-MarketRegimeBot is **NOT pushed**. The broker-free `.venv` pytest gate is the
-correct convention (documented above) and proves the sandbox keeps the real
-artifacts untouched — but a push is gated on two human decisions: (1) remove the
+MarketRegimeBot was **NOT pushed** pending two human decisions: (1) remove the
 `_test_regime_export.json` pollution file, and (2) decide how to handle the tracked
-`regime_export.json` runtime artifact in the committed history. No gate was widened,
-no dependency installed, no OFF-LIMITS file read/written/staged, no push.
+`regime_export.json` runtime artifact in the committed history.
+
+## ✅ UPDATE 2026-06-28 — both blockers resolved (Joeri-approved, Option B)
+
+- **Blocker 1 resolved:** the untracked test-pollution `data/system/_test_regime_export.json`
+  was **physically deleted** (it was never in git, never pushed).
+- **Blocker 2 resolved (Option B):** `data/system/regime_export.json` was
+  **untracked via `git rm --cached`** (the working-tree file is **kept**, not
+  deleted) and added to `.gitignore` alongside `result_snapshot.json` /
+  `_test_regime_export.json`, so runtime output no longer enters git or any push.
+  The staged change is a **pure deletion** (`+++ /dev/null`, 0 added content
+  lines) — it removes the blob from tracking and publishes **no** runtime content.
+
+### Gate after cleanup (broker-free `.venv` pytest)
+
+| | |
+|---|---|
+| passed | **526** (+417 subtests) |
+| failed / errors | **0 / 0** |
+| `data/system/` (all 8 files) mtime+size | **byte-identical before/after** — pytest wrote nothing |
+
+Staged for the cleanup commit: `.gitignore` (M), `data/system/regime_export.json`
+(D = untrack, content kept locally), this doc. No runtime-file *content* staged.
+Gate green, fast-forward — push proceeds. No gate widened, no dependency installed,
+no OFF-LIMITS content read/staged, no force.

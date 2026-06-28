@@ -3,6 +3,8 @@ __pycache__/
 .pytest_cache/
 .venv/
 data/system/result_snapshot.json
+data/system/regime_export.json
+data/system/_test_regime_export.json
 data/research/
 logs/
 temp/
