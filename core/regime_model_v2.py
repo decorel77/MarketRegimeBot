@@ -45,26 +45,26 @@ from core.regime_classifier import RegimeResult
 
 MODEL_VERSION = "v2"
 
-# --- Factor windows and normalisation ---------------------------------------------
-
-SHORT_WINDOW = 10           # sessions for ma_gap and momentum factors
-DRAWDOWN_NORMALISE = 0.15   # 15% decline from window peak → drawdown_score 1.0
-MA_GAP_NORMALISE = 0.025    # ±2.5% vs 10-session MA → ma_gap_score ±1.0
-
-# --- Composite weights --------------------------------------------------------------
-
-WEIGHT_TREND = 0.45
-WEIGHT_MA_GAP = 0.30
-WEIGHT_MOMENTUM = 0.25
-
-# --- Classification thresholds --------------------------------------------------------
-
-VOL_HIGH_THRESHOLD = 0.7           # identical to v1
-VOL_ELEVATED_THRESHOLD = 0.55      # escalation: elevated vol …
-DRAWDOWN_SEVERE_THRESHOLD = 0.6    # … plus severe drawdown → HIGH_VOLATILITY
-COMPOSITE_BULL_THRESHOLD = 0.5
-COMPOSITE_BEAR_THRESHOLD = -0.35
-BEAR_DRAWDOWN_QUALIFIER = 0.7      # deep drawdown + non-positive composite → BEAR
+# Calibration constants live in core/regime_calibration.py (HWL-005). They are
+# re-exported here unchanged so the model's public surface (e.g.
+# ``regime_model_v2.VOL_HIGH_THRESHOLD``) and every reason-string interpolation
+# stay byte-identical. Tuning a value is a model change — edit it in the
+# calibration module, where the golden test (test_regime_calibration_golden.py)
+# guards it.
+from core.regime_calibration import (  # noqa: F401  (re-exported public constants)
+    SHORT_WINDOW,
+    DRAWDOWN_NORMALISE,
+    MA_GAP_NORMALISE,
+    WEIGHT_TREND,
+    WEIGHT_MA_GAP,
+    WEIGHT_MOMENTUM,
+    VOL_HIGH_THRESHOLD,
+    VOL_ELEVATED_THRESHOLD,
+    DRAWDOWN_SEVERE_THRESHOLD,
+    COMPOSITE_BULL_THRESHOLD,
+    COMPOSITE_BEAR_THRESHOLD,
+    BEAR_DRAWDOWN_QUALIFIER,
+)
 
 
 def _clamp(value: float, low: float, high: float) -> float:

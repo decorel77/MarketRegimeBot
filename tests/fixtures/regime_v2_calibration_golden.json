@@ -1,0 +1,275 @@
+{
+  "_comment": "HWL-005 golden snapshot of MarketRegimeBot regime_model_v2 classification + factors. Generated from pre-refactor code; proves the calibration-config extraction is byte-identical. Do NOT regenerate to make a failing test pass \u2014 a diff here means classification changed.",
+  "model_version": "v2",
+  "cases": [
+    {
+      "in": [
+        0.0,
+        0.8,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "regime": "HIGH_VOLATILITY",
+      "confidence": 80,
+      "risk": "HIGH",
+      "reason": [
+        "Volatility score 0.80 exceeds high-volatility threshold 0.7",
+        "model v2 composite 0.00 (trend 0.00, ma_gap 0.00, momentum 0.00); drawdown 0.00, volatility 0.80"
+      ],
+      "composite": 0.0
+    },
+    {
+      "in": [
+        -0.2,
+        0.6,
+        0.7,
+        -0.1,
+        -0.1
+      ],
+      "regime": "HIGH_VOLATILITY",
+      "confidence": 64,
+      "risk": "HIGH",
+      "reason": [
+        "Elevated volatility 0.60 with severe drawdown 0.70 escalated to HIGH_VOLATILITY (v2 escalation rule)",
+        "model v2 composite -0.14 (trend -0.20, ma_gap -0.10, momentum -0.10); drawdown 0.70, volatility 0.60"
+      ],
+      "composite": -0.145
+    },
+    {
+      "in": [
+        0.9,
+        0.2,
+        0.0,
+        0.8,
+        0.7
+      ],
+      "regime": "BULL",
+      "confidence": 82,
+      "risk": "NORMAL",
+      "reason": [
+        "Composite trend 0.82 above bull threshold 0.5",
+        "model v2 composite 0.82 (trend 0.90, ma_gap 0.80, momentum 0.70); drawdown 0.00, volatility 0.20"
+      ],
+      "composite": 0.82
+    },
+    {
+      "in": [
+        0.6,
+        0.1,
+        0.0,
+        0.5,
+        0.4
+      ],
+      "regime": "BULL",
+      "confidence": 52,
+      "risk": "NORMAL",
+      "reason": [
+        "Composite trend 0.52 above bull threshold 0.5",
+        "model v2 composite 0.52 (trend 0.60, ma_gap 0.50, momentum 0.40); drawdown 0.00, volatility 0.10"
+      ],
+      "composite": 0.52
+    },
+    {
+      "in": [
+        -0.8,
+        0.2,
+        0.1,
+        -0.7,
+        -0.6
+      ],
+      "regime": "BEAR",
+      "confidence": 72,
+      "risk": "HIGH",
+      "reason": [
+        "Composite trend -0.72 below bear threshold -0.35",
+        "model v2 composite -0.72 (trend -0.80, ma_gap -0.70, momentum -0.60); drawdown 0.10, volatility 0.20"
+      ],
+      "composite": -0.72
+    },
+    {
+      "in": [
+        -0.1,
+        0.2,
+        0.8,
+        0.0,
+        -0.2
+      ],
+      "regime": "BEAR",
+      "confidence": 80,
+      "risk": "HIGH",
+      "reason": [
+        "Deep drawdown 0.80 with non-positive composite -0.10 (v2 drawdown-qualified bear)",
+        "model v2 composite -0.10 (trend -0.10, ma_gap 0.00, momentum -0.20); drawdown 0.80, volatility 0.20"
+      ],
+      "composite": -0.095
+    },
+    {
+      "in": [
+        0.1,
+        0.2,
+        0.1,
+        0.0,
+        0.0
+      ],
+      "regime": "SIDEWAYS",
+      "confidence": 75,
+      "risk": "LOW",
+      "reason": [
+        "Composite trend 0.04 and volatility 0.20 indicate range-bound conditions",
+        "model v2 composite 0.04 (trend 0.10, ma_gap 0.00, momentum 0.00); drawdown 0.10, volatility 0.20"
+      ],
+      "composite": 0.045
+    },
+    {
+      "in": [
+        0.5,
+        0.55,
+        0.6,
+        0.3,
+        0.2
+      ],
+      "regime": "HIGH_VOLATILITY",
+      "confidence": 57,
+      "risk": "HIGH",
+      "reason": [
+        "Elevated volatility 0.55 with severe drawdown 0.60 escalated to HIGH_VOLATILITY (v2 escalation rule)",
+        "model v2 composite 0.36 (trend 0.50, ma_gap 0.30, momentum 0.20); drawdown 0.60, volatility 0.55"
+      ],
+      "composite": 0.365
+    },
+    {
+      "in": [
+        0.85,
+        0.1,
+        0.0,
+        0.9,
+        0.8
+      ],
+      "regime": "BULL",
+      "confidence": 85,
+      "risk": "HIGH",
+      "reason": [
+        "Composite trend 0.85 above bull threshold 0.5",
+        "model v2 composite 0.85 (trend 0.85, ma_gap 0.90, momentum 0.80); drawdown 0.00, volatility 0.10"
+      ],
+      "composite": 0.8525
+    },
+    {
+      "in": [
+        -0.4,
+        0.3,
+        0.75,
+        -0.2,
+        -0.3
+      ],
+      "regime": "BEAR",
+      "confidence": 75,
+      "risk": "HIGH",
+      "reason": [
+        "Deep drawdown 0.75 with non-positive composite -0.32 (v2 drawdown-qualified bear)",
+        "model v2 composite -0.32 (trend -0.40, ma_gap -0.20, momentum -0.30); drawdown 0.75, volatility 0.30"
+      ],
+      "composite": -0.315
+    },
+    {
+      "in": [
+        0.0,
+        0.7,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "regime": "SIDEWAYS",
+      "confidence": 30,
+      "risk": "LOW",
+      "reason": [
+        "Composite trend 0.00 and volatility 0.70 indicate range-bound conditions",
+        "model v2 composite 0.00 (trend 0.00, ma_gap 0.00, momentum 0.00); drawdown 0.00, volatility 0.70"
+      ],
+      "composite": 0.0
+    },
+    {
+      "in": [
+        0.0,
+        0.70001,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "regime": "HIGH_VOLATILITY",
+      "confidence": 70,
+      "risk": "HIGH",
+      "reason": [
+        "Volatility score 0.70 exceeds high-volatility threshold 0.7",
+        "model v2 composite 0.00 (trend 0.00, ma_gap 0.00, momentum 0.00); drawdown 0.00, volatility 0.70"
+      ],
+      "composite": 0.0
+    }
+  ],
+  "factors": [
+    {
+      "closes": [
+        100,
+        101,
+        102,
+        98,
+        99,
+        103,
+        105,
+        104,
+        106,
+        108,
+        110,
+        107,
+        109,
+        111,
+        112
+      ],
+      "drawdown": 0.0,
+      "ma_gap": 1.0,
+      "momentum": 0.6
+    },
+    {
+      "closes": [
+        50,
+        52,
+        48,
+        47,
+        55,
+        60,
+        58,
+        40,
+        42,
+        45,
+        47,
+        49
+      ],
+      "drawdown": 1.0,
+      "ma_gap": -0.0815,
+      "momentum": 0.2
+    },
+    {
+      "closes": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "drawdown": 0.0,
+      "ma_gap": 0.0,
+      "momentum": 0.0
+    }
+  ]
+}
