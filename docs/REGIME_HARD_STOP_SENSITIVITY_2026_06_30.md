@@ -17,7 +17,16 @@ constructed structure. This follow-up asks the safety question the roadmap flags
 **how sensitive is the downstream hard-stop (`MaxNewPositions=0`) to
 mis-classification?**
 
-The downstream consumer (NovaBotV2 `core/nova_koopbot.py`) halts new buys when the
+> **Provenance correction (2026-07-03, REGIME-HARDSTOP-TRUTH-001):** NovaBotV2
+> `core/nova_koopbot.py` does halt new buys on `MaxNewPositions=0` /
+> `ExecutionAllowed=false`, but it reads those keys from its **own**
+> `workflow/nova_regime_checker.py` via its SystemStatus sheet — **not** from
+> this repo's `regime_export.json`, which no NovaBotV2 code consumes today
+> (NovaBridge/NovaDashboard read it, advisory-only; wiring it into the buy gate
+> is HUMAN_GATED). This study therefore models a *hypothetical/future*
+> downstream mapping at the classifier output, not an existing wire.
+
+The downstream mapping modelled here: a consumer halts new buys when the
 regime export sets `MaxNewPositions=0`. That export is keyed on the regime label;
 the two HIGH-risk regimes the classifier emits — **`HIGH_VOLATILITY`** and
 **`BEAR`** — are the defensive states a sane downstream maps to a hard-stop. This

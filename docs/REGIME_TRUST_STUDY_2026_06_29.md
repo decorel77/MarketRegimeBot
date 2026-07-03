@@ -84,10 +84,16 @@ is NOT performed here. All artifacts carry `research_only` / `not_for_live_tradi
 - **No transaction costs / slippage** in the edge comparison (it measures signal
   alignment, not a tradable strategy). The €200 live cap + whole-share sizing
   (NovaBotV2) further constrain any real exploitation.
-- **The classifier can hard-stop the live bot.** Because a mis-emitted
-  `MaxNewPositions=0` / `ExecutionAllowed=false` silently halts NovaBotV2, the
-  *fail-closed* freshness/contract guards matter as much as edge — those remain in
-  place and are unaffected by this study.
+- **The classifier does NOT currently hard-stop the live bot** *(provenance
+  corrected 2026-07-03, REGIME-HARDSTOP-TRUTH-001)*. NovaBotV2's buy gate reads
+  `MaxNewPositions` / `ExecutionAllowed` from its **own**
+  `workflow/nova_regime_checker.py` via its SystemStatus sheet; no NovaBotV2
+  code consumes this repo's `regime_export.json` (NovaBridge/NovaDashboard read
+  it, advisory-only). Contract pinned in NovaBotV2
+  `tests/test_regime_provenance_contract.py`. *If* that wiring ever lands
+  (HUMAN_GATED), a mis-emitted hard-stop state would silently halt NovaBotV2 —
+  so the *fail-closed* freshness/contract guards matter as much as edge; those
+  remain in place and are unaffected by this study.
 
 ## 5. Verdict
 
