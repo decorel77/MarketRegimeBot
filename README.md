@@ -85,9 +85,15 @@ system. See the 2026-06-28 program audit for the full dataflow.
 ## Validation
 
 ```powershell
-python -m unittest discover tests
+# Canonical runner (broker-free .venv with pandas + the pytest conftest sandbox):
+.venv\Scripts\python.exe -m pytest -q tests
 python -m tools.regime_autocycle --once
 ```
+
+> `python -m unittest discover` is **not** the canonical runner (`-S` drops
+> pandas → RED; see `docs/SAFE_TEST_GATE.md`). Since MRB-UNITTEST-GUARD-001
+> a stray unittest run is at least harmless: `tests/__init__.py` sandboxes
+> all production artifact writes, pinned by `tests/test__artifact_sandbox.py`.
 
 ## Research: calibration / walk-forward harness
 
