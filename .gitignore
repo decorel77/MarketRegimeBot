@@ -5,6 +5,9 @@ __pycache__/
 data/system/result_snapshot.json
 data/system/regime_export.json
 data/system/_test_regime_export.json
+# agent-workflow queue/state, runtime (RUNTIME-UNTRACK-GO D2 sweep)
+data/system/agent_state.json
+data/system/task_queue.json
 data/research/
 logs/
 temp/
